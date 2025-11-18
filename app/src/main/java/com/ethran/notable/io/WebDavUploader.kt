@@ -167,6 +167,71 @@ object WebDavUploader {
     }
 
     /**
+     * Deletes a PDF file from the WebDAV server
+     *
+     * @param context Android context
+     * @param notebookName Name of the notebook to delete
+     * @return True if deletion was successful, false otherwise
+     */
+    suspend fun deletePdf(
+        context: Context,
+        notebookName: String
+    ): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val settings = GlobalAppSettings.current
+
+            // Check if WebDAV is enabled and delete setting is enabled
+            if (!settings.webdavEnabled) {
+                Log.d(TAG, "WebDAV upload disabled, skipping delete")
+                return@withContext false
+            }
+
+            if (!settings.webdavDeleteRemoteOnLocalDelete) {
+                Log.d(TAG, "WebDAV delete on local delete disabled, skipping")
+                return@withContext false
+            }
+
+            if (settings.webdavUrl.isBlank()) {
+                Log.e(TAG, "WebDAV URL not configured")
+                return@withContext false
+            }
+
+            // Create Sardine client
+            val sardine = OkHttpSardine()
+            if (settings.webdavUsername.isNotBlank() && settings.webdavPassword.isNotBlank()) {
+                sardine.setCredentials(settings.webdavUsername, settings.webdavPassword)
+            }
+
+            // Normalize WebDAV URL (ensure it ends with /)
+            val baseUrl = if (settings.webdavUrl.endsWith("/")) {
+                settings.webdavUrl
+            } else {
+                settings.webdavUrl + "/"
+            }
+
+            // Build remote path
+            val fileName = "${sanitizeFileName(notebookName)}.pdf"
+            val remotePath = "${baseUrl}Notable/${fileName}"
+
+            Log.d(TAG, "Deleting ${fileName} from $remotePath")
+
+            // Check if file exists before trying to delete
+            if (sardine.exists(remotePath)) {
+                sardine.delete(remotePath)
+                Log.i(TAG, "Successfully deleted ${fileName} from WebDAV server")
+                true
+            } else {
+                Log.d(TAG, "File ${fileName} does not exist on server, nothing to delete")
+                true // Not an error if file doesn't exist
+            }
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to delete PDF from WebDAV: ${e.message}", e)
+            false
+        }
+    }
+
+    /**
      * Sanitizes a filename to be safe for WebDAV paths
      */
     private fun sanitizeFileName(name: String): String {

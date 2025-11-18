@@ -118,11 +118,24 @@ fun NotebookConfigDialog(bookId: String, onClose: () -> Unit) {
     }
     // Confirmation Dialog for Deletion
     if (showDeleteDialog) {
+        val scope = rememberCoroutineScope()
         ShowSimpleConfirmationDialog(
             title = "Confirm Deletion",
             message = "Are you sure you want to delete \"${book!!.title}\"?",
             onConfirm = {
+                val bookTitle = book!!.title
                 bookRepository.delete(bookId)
+
+                // Delete from WebDAV if enabled
+                scope.launch {
+                    try {
+                        com.ethran.notable.io.WebDavUploader.deletePdf(context, bookTitle)
+                    } catch (e: Exception) {
+                        // Don't fail the deletion if WebDAV delete fails
+                        android.util.Log.e("NotebookConfig", "Failed to delete from WebDAV: ${e.message}")
+                    }
+                }
+
                 showDeleteDialog = false
                 onClose()
             },

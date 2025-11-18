@@ -333,6 +333,14 @@ fun WebDavSettings(kv: KvProxy, settings: AppSettings) {
                 },
                 isPassword = true)
 
+            // Delete remote files on local delete
+            SettingToggleRow(
+                label = "Delete remote files on local delete",
+                value = settings.webdavDeleteRemoteOnLocalDelete,
+                onToggle = { isChecked ->
+                    kv.setAppSettings(settings.copy(webdavDeleteRemoteOnLocalDelete = isChecked))
+                })
+
             // Test Connection Button
             Button(
                 onClick = {

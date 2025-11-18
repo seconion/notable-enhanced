@@ -55,6 +55,7 @@ data class AppSettings(
     val webdavUrl: String = "",
     val webdavUsername: String = "",
     val webdavPassword: String = "",
+    val webdavDeleteRemoteOnLocalDelete: Boolean = false,
 
     // UI Customization
     val accentColor: AccentColor = AccentColor.Black,
