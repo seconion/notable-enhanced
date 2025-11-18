@@ -202,10 +202,13 @@ private fun CalendarGrid(
 ) {
     Column(modifier = Modifier
         .padding(horizontal = 8.dp, vertical = 4.dp)
-        .fillMaxWidth()
-        .height(180.dp)) {
+        .fillMaxWidth()) {
         // Day headers
-        Row(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(16.dp)
+        ) {
             listOf("S", "M", "T", "W", "T", "F", "S").forEach { day ->
                 Text(
                     text = day,
@@ -213,12 +216,12 @@ private fun CalendarGrid(
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.caption,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 10.sp
+                    fontSize = 9.sp
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(2.dp))
 
         // Calendar days
         val calendar = currentMonth.clone() as Calendar
@@ -255,7 +258,7 @@ private fun CalendarGrid(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 1.dp)
+                    .height(24.dp)
             ) {
                 week.forEach { day ->
                     if (day != null) {
@@ -290,35 +293,38 @@ private fun RowScope.DayCell(
     Box(
         modifier = Modifier
             .weight(1f)
-            .aspectRatio(1f)
-            .padding(1.dp)
-            .clip(RoundedCornerShape(4.dp))
+            .fillMaxHeight()
+            .padding(horizontal = 1.dp)
+            .clip(RoundedCornerShape(2.dp))
             .background(
                 when {
-                    isSelected -> MaterialTheme.colors.primary.copy(alpha = 0.2f)
+                    isSelected -> MaterialTheme.colors.primary.copy(alpha = 0.15f)
                     else -> Color.Transparent
                 }
             )
             .border(
                 width = if (isSelected) 1.dp else 0.dp,
                 color = if (isSelected) MaterialTheme.colors.primary else Color.Transparent,
-                shape = RoundedCornerShape(4.dp)
+                shape = RoundedCornerShape(2.dp)
             )
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
             Text(
                 text = day.toString(),
                 style = MaterialTheme.typography.caption,
-                fontSize = 11.sp,
+                fontSize = 10.sp,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
             )
             if (hasActivity) {
                 Spacer(modifier = Modifier.height(1.dp))
                 Box(
                     modifier = Modifier
-                        .size(3.dp)
+                        .size(2.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colors.primary)
                 )
