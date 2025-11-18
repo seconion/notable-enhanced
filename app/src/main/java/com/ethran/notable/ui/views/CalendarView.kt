@@ -57,7 +57,7 @@ fun CalendarView(navController: NavController) {
     LaunchedEffect(selectedDate) {
         if (selectedDate != null) {
             notesForDate = loadNotesForDate(appRepository, selectedDate!!)
-            val memoInfo = findOrCreateDailyMemo(appRepository, selectedDate!!)
+            val memoInfo = findDailyMemo(appRepository, selectedDate!!)
             dailyMemoPageId = memoInfo?.first
             dailyMemoBookId = memoInfo?.second
         }
@@ -75,12 +75,14 @@ fun CalendarView(navController: NavController) {
             MonthNavigationBar(
                 currentMonth = currentMonth,
                 onPreviousMonth = {
-                    currentMonth = currentMonth.clone() as Calendar
-                    currentMonth.add(Calendar.MONTH, -1)
+                    val newMonth = currentMonth.clone() as Calendar
+                    newMonth.add(Calendar.MONTH, -1)
+                    currentMonth = newMonth
                 },
                 onNextMonth = {
-                    currentMonth = currentMonth.clone() as Calendar
-                    currentMonth.add(Calendar.MONTH, 1)
+                    val newMonth = currentMonth.clone() as Calendar
+                    newMonth.add(Calendar.MONTH, 1)
+                    currentMonth = newMonth
                 }
             )
 
@@ -104,8 +106,18 @@ fun CalendarView(navController: NavController) {
                     notesForDate = notesForDate,
                     navController = navController,
                     onOpenDailyMemo = {
-                        if (dailyMemoPageId != null && dailyMemoBookId != null) {
-                            navController.navigate("books/$dailyMemoBookId/pages/$dailyMemoPageId")
+                        scope.launch {
+                            if (dailyMemoPageId != null && dailyMemoBookId != null) {
+                                navController.navigate("books/$dailyMemoBookId/pages/$dailyMemoPageId")
+                            } else {
+                                // Create daily memo only when button is clicked
+                                val memoInfo = createDailyMemo(appRepository, selectedDate!!)
+                                if (memoInfo != null) {
+                                    dailyMemoPageId = memoInfo.first
+                                    dailyMemoBookId = memoInfo.second
+                                    navController.navigate("books/${memoInfo.second}/pages/${memoInfo.first}")
+                                }
+                            }
                         }
                     }
                 )
@@ -188,21 +200,25 @@ private fun CalendarGrid(
     datesWithActivity: Set<String>,
     onDateSelected: (Date) -> Unit
 ) {
-    Column(modifier = Modifier.padding(8.dp)) {
+    Column(modifier = Modifier
+        .padding(horizontal = 8.dp, vertical = 4.dp)
+        .fillMaxWidth()
+        .height(180.dp)) {
         // Day headers
         Row(modifier = Modifier.fillMaxWidth()) {
-            listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat").forEach { day ->
+            listOf("S", "M", "T", "W", "T", "F", "S").forEach { day ->
                 Text(
                     text = day,
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.caption,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 10.sp
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
         // Calendar days
         val calendar = currentMonth.clone() as Calendar
@@ -239,7 +255,7 @@ private fun CalendarGrid(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 4.dp)
+                    .padding(vertical = 1.dp)
             ) {
                 week.forEach { day ->
                     if (day != null) {
@@ -275,8 +291,8 @@ private fun RowScope.DayCell(
         modifier = Modifier
             .weight(1f)
             .aspectRatio(1f)
-            .padding(2.dp)
-            .clip(RoundedCornerShape(8.dp))
+            .padding(1.dp)
+            .clip(RoundedCornerShape(4.dp))
             .background(
                 when {
                     isSelected -> MaterialTheme.colors.primary.copy(alpha = 0.2f)
@@ -284,9 +300,9 @@ private fun RowScope.DayCell(
                 }
             )
             .border(
-                width = if (isSelected) 2.dp else 0.dp,
+                width = if (isSelected) 1.dp else 0.dp,
                 color = if (isSelected) MaterialTheme.colors.primary else Color.Transparent,
-                shape = RoundedCornerShape(8.dp)
+                shape = RoundedCornerShape(4.dp)
             )
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
@@ -294,14 +310,15 @@ private fun RowScope.DayCell(
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = day.toString(),
-                style = MaterialTheme.typography.body2,
+                style = MaterialTheme.typography.caption,
+                fontSize = 11.sp,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
             )
             if (hasActivity) {
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(1.dp))
                 Box(
                     modifier = Modifier
-                        .size(6.dp)
+                        .size(3.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colors.primary)
                 )
@@ -536,7 +553,7 @@ private suspend fun loadNotesForDate(
     }
 }
 
-private suspend fun findOrCreateDailyMemo(
+private suspend fun findDailyMemo(
     appRepository: AppRepository,
     date: Date
 ): Pair<String, String>? = withContext(Dispatchers.IO) {
@@ -553,6 +570,21 @@ private suspend fun findOrCreateDailyMemo(
             val pageId = existingMemo.pageIds.firstOrNull()
             return@withContext if (pageId != null) Pair(pageId, existingMemo.id) else null
         }
+
+        null
+    } catch (e: Exception) {
+        Log.e(TAG, "Error finding daily memo: ${e.message}", e)
+        null
+    }
+}
+
+private suspend fun createDailyMemo(
+    appRepository: AppRepository,
+    date: Date
+): Pair<String, String>? = withContext(Dispatchers.IO) {
+    try {
+        val dateStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(date)
+        val memoTitle = "Daily Memo - $dateStr"
 
         // Create new daily memo notebook
         val newNotebook = Notebook(
