@@ -1,5 +1,6 @@
 package com.ethran.notable.ui.views
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -11,13 +12,19 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.runtime.*
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -27,6 +34,8 @@ import androidx.navigation.NavController
 import com.ethran.notable.data.AppRepository
 import com.ethran.notable.data.db.Notebook
 import com.ethran.notable.data.db.Page
+import com.ethran.notable.data.db.Stroke
+import com.ethran.notable.editor.drawing.drawStroke
 import com.ethran.notable.TAG
 import io.shipbook.shipbooksdk.Log
 import kotlinx.coroutines.Dispatchers
@@ -42,7 +51,7 @@ fun CalendarView(navController: NavController) {
     val scope = rememberCoroutineScope()
 
     var currentMonth by remember { mutableStateOf(Calendar.getInstance()) }
-    var selectedDate by remember { mutableStateOf<Date?>(null) }
+    var selectedDate by remember { mutableStateOf<Date?>(Date()) } // Auto-select today
     var notesForDate by remember { mutableStateOf<List<NotebookOrPage>>(emptyList()) }
     var datesWithActivity by remember { mutableStateOf<Set<String>>(emptySet()) }
     var dailyMemoPageId by remember { mutableStateOf<String?>(null) }
@@ -71,55 +80,90 @@ fun CalendarView(navController: NavController) {
             // Top bar
             TopBar(navController)
 
-            // Month navigation
-            MonthNavigationBar(
-                currentMonth = currentMonth,
-                onPreviousMonth = {
-                    val newMonth = currentMonth.clone() as Calendar
-                    newMonth.add(Calendar.MONTH, -1)
-                    currentMonth = newMonth
-                },
-                onNextMonth = {
-                    val newMonth = currentMonth.clone() as Calendar
-                    newMonth.add(Calendar.MONTH, 1)
-                    currentMonth = newMonth
-                }
-            )
-
-            Divider()
-
-            // Calendar grid
-            CalendarGrid(
-                currentMonth = currentMonth,
-                selectedDate = selectedDate,
-                datesWithActivity = datesWithActivity,
-                onDateSelected = { date -> selectedDate = date }
-            )
-
-            Divider()
-
-            // Day details section
-            if (selectedDate != null) {
-                DayDetailsSection(
-                    selectedDate = selectedDate!!,
-                    hasDailyMemo = dailyMemoPageId != null,
-                    notesForDate = notesForDate,
-                    navController = navController,
-                    onOpenDailyMemo = {
-                        scope.launch {
-                            if (dailyMemoPageId != null && dailyMemoBookId != null) {
-                                navController.navigate("books/$dailyMemoBookId/pages/$dailyMemoPageId")
-                            } else {
-                                // Create daily memo only when button is clicked
-                                val memoInfo = createDailyMemo(appRepository, selectedDate!!)
-                                if (memoInfo != null) {
-                                    dailyMemoPageId = memoInfo.first
-                                    dailyMemoBookId = memoInfo.second
-                                    navController.navigate("books/${memoInfo.second}/pages/${memoInfo.first}")
-                                }
-                            }
+            // Top row: Calendar (left) and Today's Notes (right)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(0.35f)
+                    .padding(horizontal = 8.dp)
+            ) {
+                // Left side: Calendar
+                Column(
+                    modifier = Modifier
+                        .weight(0.5f)
+                        .fillMaxHeight()
+                ) {
+                    // Month navigation
+                    MonthNavigationBar(
+                        currentMonth = currentMonth,
+                        onPreviousMonth = {
+                            val newMonth = currentMonth.clone() as Calendar
+                            newMonth.add(Calendar.MONTH, -1)
+                            currentMonth = newMonth
+                        },
+                        onNextMonth = {
+                            val newMonth = currentMonth.clone() as Calendar
+                            newMonth.add(Calendar.MONTH, 1)
+                            currentMonth = newMonth
                         }
+                    )
+
+                    Divider()
+
+                    // Calendar grid
+                    CalendarGrid(
+                        currentMonth = currentMonth,
+                        selectedDate = selectedDate,
+                        datesWithActivity = datesWithActivity,
+                        onDateSelected = { date -> selectedDate = date }
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                // Right side: Today's Notes
+                if (selectedDate != null) {
+                    TodaysNotesSection(
+                        selectedDate = selectedDate!!,
+                        notesForDate = notesForDate,
+                        navController = navController,
+                        modifier = Modifier
+                            .weight(0.5f)
+                            .fillMaxHeight()
+                    )
+                } else {
+                    // Placeholder when no date selected
+                    Box(
+                        modifier = Modifier
+                            .weight(0.5f)
+                            .fillMaxHeight(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Select a date to view notes",
+                            style = MaterialTheme.typography.body1,
+                            color = MaterialTheme.colors.onSurface.copy(alpha = 0.6f)
+                        )
                     }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            Divider(modifier = Modifier.padding(horizontal = 8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Bottom row: Memo (full width, takes 65% of screen)
+            if (selectedDate != null) {
+                MemoSection(
+                    selectedDate = selectedDate!!,
+                    navController = navController,
+                    dailyMemoPageId = dailyMemoPageId,
+                    dailyMemoBookId = dailyMemoBookId,
+                    appRepository = appRepository,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(0.65f)
+                        .padding(horizontal = 8.dp)
                 )
             }
         }
@@ -334,48 +378,42 @@ private fun RowScope.DayCell(
 }
 
 @Composable
-private fun DayDetailsSection(
+private fun TodaysNotesSection(
     selectedDate: Date,
-    hasDailyMemo: Boolean,
     notesForDate: List<NotebookOrPage>,
     navController: NavController,
-    onOpenDailyMemo: () -> Unit
+    modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
+        modifier = modifier
+            .fillMaxWidth()
     ) {
-        // Date header
+        // Header
         Text(
-            text = SimpleDateFormat("EEEE, MMMM d, yyyy", Locale.getDefault()).format(selectedDate),
+            text = "Today's Notes",
             style = MaterialTheme.typography.h6,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 8.dp)
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = SimpleDateFormat("EEEE, MMMM d, yyyy", Locale.getDefault()).format(selectedDate),
+            style = MaterialTheme.typography.body2,
+            color = MaterialTheme.colors.onSurface.copy(alpha = 0.7f),
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
 
-        // Daily memo button
-        Button(
-            onClick = onOpenDailyMemo,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(if (hasDailyMemo) "Open Daily Memo" else "Create Daily Memo")
-        }
+        Divider()
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-        // Notes edited on this date
+        // Notes list
         if (notesForDate.isNotEmpty()) {
-            Text(
-                text = "Notes edited on this date:",
-                style = MaterialTheme.typography.subtitle1,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            LazyColumn {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize()
+            ) {
                 items(notesForDate) { item ->
+                    // Only notebooks now, no standalone pages
                     when (item) {
                         is NotebookOrPage.NotebookItem -> {
                             NotebookListItem(
@@ -389,22 +427,215 @@ private fun DayDetailsSection(
                             )
                         }
                         is NotebookOrPage.PageItem -> {
-                            PageListItem(
-                                page = item.page,
-                                onClick = {
-                                    navController.navigate("pages/${item.page.id}")
-                                }
-                            )
+                            // Should never happen now since we filter out pages
                         }
                     }
                 }
             }
         } else {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "No notes edited on this date",
+                    style = MaterialTheme.typography.body2,
+                    color = MaterialTheme.colors.onSurface.copy(alpha = 0.6f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MemoSection(
+    selectedDate: Date,
+    navController: NavController,
+    dailyMemoPageId: String?,
+    dailyMemoBookId: String?,
+    appRepository: AppRepository,
+    modifier: Modifier = Modifier
+) {
+    val scope = rememberCoroutineScope()
+    var memoPage by remember { mutableStateOf<Page?>(null) }
+    var strokes by remember { mutableStateOf<List<Stroke>>(emptyList()) }
+
+    // Load memo page and strokes when date or dailyMemoPageId changes
+    LaunchedEffect(selectedDate, dailyMemoPageId) {
+        if (dailyMemoPageId != null) {
+            withContext(Dispatchers.IO) {
+                try {
+                    val pageWithStrokes = appRepository.pageRepository.getWithStrokeById(dailyMemoPageId)
+                    memoPage = pageWithStrokes.page
+                    strokes = pageWithStrokes.strokes
+                    Log.d(TAG, "Loaded memo for ${formatDateKey(selectedDate)}: ${strokes.size} strokes")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error loading memo page: ${e.message}", e)
+                    memoPage = null
+                    strokes = emptyList()
+                }
+            }
+        } else {
+            memoPage = null
+            strokes = emptyList()
+            Log.d(TAG, "No memo for ${formatDateKey(selectedDate)}")
+        }
+    }
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+    ) {
+        // Header with action button
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Text(
-                text = "No notes edited on this date",
-                style = MaterialTheme.typography.body2,
-                color = MaterialTheme.colors.onSurface.copy(alpha = 0.6f)
+                text = "Memo",
+                style = MaterialTheme.typography.h6,
+                fontWeight = FontWeight.Bold
             )
+
+            Button(
+                onClick = {
+                    scope.launch {
+                        if (dailyMemoPageId != null && dailyMemoBookId != null) {
+                            // Open existing memo
+                            navController.navigate("books/$dailyMemoBookId/pages/$dailyMemoPageId")
+                        } else {
+                            // Create and open new memo
+                            val memoInfo = createDailyMemo(appRepository, selectedDate)
+                            if (memoInfo != null) {
+                                navController.navigate("books/${memoInfo.second}/pages/${memoInfo.first}")
+                            }
+                        }
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(
+                    backgroundColor = MaterialTheme.colors.primary
+                )
+            ) {
+                Text(if (dailyMemoPageId != null) "Open" else "Create")
+            }
+        }
+
+        Divider()
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Memo content preview card - renders actual strokes
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .clickable {
+                    scope.launch {
+                        if (dailyMemoPageId != null && dailyMemoBookId != null) {
+                            navController.navigate("books/$dailyMemoBookId/pages/$dailyMemoPageId")
+                        } else {
+                            val memoInfo = createDailyMemo(appRepository, selectedDate)
+                            if (memoInfo != null) {
+                                navController.navigate("books/${memoInfo.second}/pages/${memoInfo.first}")
+                            }
+                        }
+                    }
+                },
+            elevation = 2.dp,
+            shape = RoundedCornerShape(8.dp),
+            backgroundColor = MaterialTheme.colors.surface
+        ) {
+            if (dailyMemoPageId != null && strokes.isNotEmpty()) {
+                // Render actual strokes
+                Canvas(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(androidx.compose.ui.graphics.Color.White)
+                ) {
+                    // Calculate scale to fit all strokes in view
+                    val canvasWidth = size.width
+                    val canvasHeight = size.height
+
+                    // Simple scaling - assumes page is roughly 2000x3000 pixels
+                    val scale = minOf(canvasWidth / 2000f, canvasHeight / 3000f)
+
+                    drawIntoCanvas { canvas ->
+                        strokes.forEach { stroke ->
+                            try {
+                                // Scale stroke positions
+                                val scaledStroke = stroke.copy(
+                                    points = stroke.points.map { point ->
+                                        point.copy(
+                                            x = point.x * scale,
+                                            y = point.y * scale
+                                        )
+                                    },
+                                    size = stroke.size * scale
+                                )
+                                drawStroke(canvas.nativeCanvas, scaledStroke, Offset.Zero)
+                            } catch (e: Exception) {
+                                Log.e(TAG, "Error drawing stroke: ${e.message}")
+                            }
+                        }
+                    }
+                }
+            } else if (dailyMemoPageId != null && strokes.isEmpty()) {
+                // Empty memo
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(androidx.compose.ui.graphics.Color.White),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Empty memo\nTap to start writing",
+                        style = MaterialTheme.typography.body1,
+                        color = MaterialTheme.colors.onSurface.copy(alpha = 0.4f),
+                        textAlign = TextAlign.Center
+                    )
+                }
+            } else {
+                // No memo yet - show create prompt
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Create Memo",
+                            modifier = Modifier.size(48.dp),
+                            tint = MaterialTheme.colors.primary.copy(alpha = 0.5f)
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Text(
+                            text = "No memo for this day",
+                            style = MaterialTheme.typography.subtitle1,
+                            color = MaterialTheme.colors.onSurface.copy(alpha = 0.7f),
+                            textAlign = TextAlign.Center
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(
+                            text = "Tap to create a new daily memo",
+                            style = MaterialTheme.typography.body2,
+                            color = MaterialTheme.colors.onSurface.copy(alpha = 0.5f),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -495,20 +726,13 @@ private suspend fun loadDatesWithActivity(
         endOfMonth.set(Calendar.MINUTE, 59)
         endOfMonth.set(Calendar.SECOND, 59)
 
-        val notebooks = appRepository.bookRepository.getAll()
-        val pages = appRepository.pageRepository.getAll()
-
         val dates = mutableSetOf<String>()
 
-        notebooks.forEach { notebook ->
+        // Only show activity for notebooks (including Daily Memos)
+        // Standalone pages are not included
+        appRepository.bookRepository.getAll().forEach { notebook ->
             if (notebook.updatedAt.after(startOfMonth.time) && notebook.updatedAt.before(endOfMonth.time)) {
                 dates.add(formatDateKey(notebook.updatedAt))
-            }
-        }
-
-        pages.forEach { page ->
-            if (page.updatedAt.after(startOfMonth.time) && page.updatedAt.before(endOfMonth.time)) {
-                dates.add(formatDateKey(page.updatedAt))
             }
         }
 
@@ -538,21 +762,13 @@ private suspend fun loadNotesForDate(
             set(Calendar.SECOND, 59)
         }
 
+        // Show all notebooks (including Daily Memos) that were updated on this date
+        // Standalone pages are excluded
         val notebooks = appRepository.bookRepository.getAll()
             .filter { it.updatedAt.after(startOfDay.time) && it.updatedAt.before(endOfDay.time) }
-            .filter { !it.title.startsWith("Daily Memo -") }
             .map { NotebookOrPage.NotebookItem(it) }
 
-        val pages = appRepository.pageRepository.getAll()
-            .filter { it.updatedAt.after(startOfDay.time) && it.updatedAt.before(endOfDay.time) }
-            .map { NotebookOrPage.PageItem(it) }
-
-        (notebooks + pages).sortedByDescending {
-            when (it) {
-                is NotebookOrPage.NotebookItem -> it.notebook.updatedAt
-                is NotebookOrPage.PageItem -> it.page.updatedAt
-            }
-        }
+        notebooks.sortedByDescending { it.notebook.updatedAt }
     } catch (e: Exception) {
         Log.e(TAG, "Error loading notes for date: ${e.message}", e)
         emptyList()
@@ -592,28 +808,27 @@ private suspend fun createDailyMemo(
         val dateStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(date)
         val memoTitle = "Daily Memo - $dateStr"
 
-        // Create new daily memo notebook
+        // Create new daily memo notebook with proper setup
         val newNotebook = Notebook(
             title = memoTitle,
-            createdAt = Date(),
-            updatedAt = Date()
+            createdAt = date,
+            updatedAt = date
         )
+
+        // Use the standard create method which automatically creates first page
         appRepository.bookRepository.create(newNotebook)
 
-        // Create first page
-        val newPage = Page(
-            notebookId = newNotebook.id,
-            createdAt = Date(),
-            updatedAt = Date()
-        )
-        appRepository.pageRepository.create(newPage)
+        // Get the pageIds that were automatically created
+        val createdNotebook = appRepository.bookRepository.getById(newNotebook.id)
+        val pageId = createdNotebook?.pageIds?.firstOrNull() ?: createdNotebook?.openPageId
 
-        // Add page to notebook
-        appRepository.bookRepository.addPage(newNotebook.id, newPage.id)
-        appRepository.bookRepository.setOpenPageId(newNotebook.id, newPage.id)
-
-        Log.d(TAG, "Created daily memo: $memoTitle")
-        Pair(newPage.id, newNotebook.id)
+        if (pageId != null) {
+            Log.d(TAG, "Created daily memo: $memoTitle with page: $pageId")
+            Pair(pageId, newNotebook.id)
+        } else {
+            Log.e(TAG, "Created daily memo but no page found")
+            null
+        }
     } catch (e: Exception) {
         Log.e(TAG, "Error creating daily memo: ${e.message}", e)
         null
