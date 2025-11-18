@@ -203,6 +203,9 @@ dependencies {
     // for PDF support:
     implementation("com.artifex.mupdf:fitz:1.26.10")
 
+    // for WebDAV support:
+    implementation("com.github.thegrizzlylabs:sardine-android:0.8")
+
     // Added so that R8 optimization don't fail
     // SLF4J backend: provides a simple logger so (probably) ShipBook can output logs.
     // Needed because SLF4J is just an API; without a binding, logging calls are ignored.

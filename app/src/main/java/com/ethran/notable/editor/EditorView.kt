@@ -106,6 +106,52 @@ fun EditorView(
                 // finish selection operation
                 editorState.selectionState.applySelectionDisplace(page)
                 exportToLinkedFile(context, bookId, appRepository.bookRepository)
+
+                // Auto-upload to WebDAV if enabled
+                val settings = GlobalAppSettings.current
+                if (settings.webdavEnabled && bookId != null) {
+                    kotlinx.coroutines.runBlocking {
+                        try {
+                            // Export as PDF
+                            val book = appRepository.bookRepository.getById(bookId)
+                            if (book != null) {
+                                val pdfPath = com.ethran.notable.io.ExportEngine(
+                                    context,
+                                    appRepository.pageRepository,
+                                    appRepository.bookRepository
+                                ).exportAndGetFilePath(
+                                    com.ethran.notable.io.ExportTarget.Book(bookId),
+                                    com.ethran.notable.io.ExportFormat.PDF
+                                )
+
+                                // Upload to WebDAV
+                                if (pdfPath != null) {
+                                    val pdfFile = java.io.File(pdfPath)
+                                    if (pdfFile.exists()) {
+                                        Log.d(TAG, "Uploading PDF to WebDAV: ${pdfFile.absolutePath}")
+                                        val uploadSuccess = com.ethran.notable.io.WebDavUploader.uploadPdf(
+                                            context,
+                                            pdfFile,
+                                            book.title
+                                        )
+                                        if (uploadSuccess) {
+                                            Log.i(TAG, "Successfully uploaded ${book.title} to WebDAV")
+                                        } else {
+                                            Log.e(TAG, "Failed to upload ${book.title} to WebDAV")
+                                        }
+                                    } else {
+                                        Log.e(TAG, "PDF file does not exist: $pdfPath")
+                                    }
+                                } else {
+                                    Log.e(TAG, "Failed to export PDF for WebDAV upload")
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Error during WebDAV auto-upload: ${e.message}", e)
+                        }
+                    }
+                }
+
                 page.disposeOldPage()
             }
         }

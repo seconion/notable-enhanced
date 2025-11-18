@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -32,11 +33,13 @@ fun NotebookCard(
     modifier: Modifier = Modifier
 ) {
 
+    val primaryColor = MaterialTheme.colors.primary
+
     Box(
         modifier = modifier
             .fillMaxWidth()
             .aspectRatio(3f / 4f)
-            .border(1.dp, Color.Black, RectangleShape)
+            .border(1.dp, primaryColor, RectangleShape)
             .background(Color.White)
             .clip(RoundedCornerShape(2))
     ) {
@@ -47,7 +50,7 @@ fun NotebookCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(3f / 4f)
-                    .border(1.dp, Color.Black, RectangleShape)
+                    .border(1.dp, primaryColor, RectangleShape)
                     .combinedClickable(
                         onClick = { onOpen(bookId, openPageId ?: pageIds[0]) },
                         onLongClick = { onOpenSettings(bookId) }), pageId)
@@ -55,7 +58,7 @@ fun NotebookCard(
         Text(
             text = pageIds.size.toString(),
             modifier = Modifier
-                .background(Color.Black)
+                .background(primaryColor)
                 .padding(5.dp),
             color = Color.White
         )

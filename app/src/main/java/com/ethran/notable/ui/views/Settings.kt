@@ -40,6 +40,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,6 +65,9 @@ import com.ethran.notable.ui.showHint
 import com.ethran.notable.utils.isLatestVersion
 import com.ethran.notable.utils.isNext
 import kotlin.concurrent.thread
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun SettingsView(navController: NavController) {
@@ -188,6 +192,22 @@ fun GeneralSettings(kv: KvProxy, settings: AppSettings) {
                 }
             })
 
+        SelectorRow(
+            label = "Accent Color (Borders/Frames)",
+            options = listOf(
+                AppSettings.AccentColor.Black to "Black",
+                AppSettings.AccentColor.Blue to "Blue",
+                AppSettings.AccentColor.Red to "Red",
+                AppSettings.AccentColor.Green to "Green",
+                AppSettings.AccentColor.Orange to "Orange",
+                AppSettings.AccentColor.Purple to "Purple",
+                AppSettings.AccentColor.Teal to "Teal"
+            ),
+            value = settings.accentColor,
+            onValueChange = { newColor ->
+                kv.setAppSettings(settings.copy(accentColor = newColor))
+            })
+
         SettingToggleRow(
             label = stringResource(R.string.use_onyx_neotools_may_cause_crashes),
             value = settings.neoTools,
@@ -241,6 +261,133 @@ fun GeneralSettings(kv: KvProxy, settings: AppSettings) {
             onToggle = { isChecked ->
                 kv.setAppSettings(settings.copy(visualizePdfPagination = isChecked))
             })
+
+        // WebDAV Settings Section
+        WebDavSettings(kv, settings)
+    }
+}
+
+@Composable
+fun WebDavSettings(kv: KvProxy, settings: AppSettings) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var testResultMessage by remember { mutableStateOf<String?>(null) }
+    var isTesting by remember { mutableStateOf(false) }
+
+    Column(modifier = Modifier.padding(top = 16.dp)) {
+        // Section Header
+        Text(
+            text = "WebDAV Auto-Upload",
+            style = MaterialTheme.typography.h6,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(vertical = 8.dp)
+        )
+
+        Text(
+            text = "Automatically upload notes as PDF when exiting the editor",
+            style = MaterialTheme.typography.caption,
+            fontStyle = FontStyle.Italic,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        SettingsDivider()
+
+        // Enable WebDAV toggle
+        SettingToggleRow(
+            label = "Enable WebDAV Auto-Upload",
+            value = settings.webdavEnabled,
+            onToggle = { isChecked ->
+                kv.setAppSettings(settings.copy(webdavEnabled = isChecked))
+            })
+
+        // Show settings only if enabled
+        if (settings.webdavEnabled) {
+            // WebDAV URL
+            SettingTextInputRow(
+                label = "WebDAV URL",
+                placeholder = "https://example.com/webdav/",
+                value = settings.webdavUrl,
+                onValueChange = { newValue ->
+                    kv.setAppSettings(settings.copy(webdavUrl = newValue))
+                    testResultMessage = null // Clear test result when settings change
+                })
+
+            // Username
+            SettingTextInputRow(
+                label = "Username",
+                placeholder = "username",
+                value = settings.webdavUsername,
+                onValueChange = { newValue ->
+                    kv.setAppSettings(settings.copy(webdavUsername = newValue))
+                    testResultMessage = null
+                })
+
+            // Password
+            SettingTextInputRow(
+                label = "Password",
+                placeholder = "password",
+                value = settings.webdavPassword,
+                onValueChange = { newValue ->
+                    kv.setAppSettings(settings.copy(webdavPassword = newValue))
+                    testResultMessage = null
+                },
+                isPassword = true)
+
+            // Test Connection Button
+            Button(
+                onClick = {
+                    isTesting = true
+                    testResultMessage = "Testing connection..."
+                    scope.launch(Dispatchers.IO) {
+                        val result = try {
+                            val success = com.ethran.notable.io.WebDavUploader.testConnection()
+                            if (success) {
+                                "✓ Connection successful!"
+                            } else {
+                                "✗ Connection failed"
+                            }
+                        } catch (e: java.net.UnknownHostException) {
+                            "✗ Unknown host: ${e.message}"
+                        } catch (e: java.net.ConnectException) {
+                            "✗ Connection refused: ${e.message}"
+                        } catch (e: javax.net.ssl.SSLException) {
+                            "✗ SSL error: ${e.message}"
+                        } catch (e: java.io.IOException) {
+                            "✗ Network error: ${e.message}"
+                        } catch (e: IllegalArgumentException) {
+                            "✗ ${e.message}"
+                        } catch (e: Exception) {
+                            "✗ Error (${e.javaClass.simpleName}): ${e.message ?: "Unknown"}"
+                        }
+
+                        withContext(Dispatchers.Main) {
+                            testResultMessage = result
+                            isTesting = false
+                        }
+                    }
+                },
+                enabled = !isTesting,
+                modifier = Modifier
+                    .padding(vertical = 8.dp)
+                    .fillMaxWidth()
+            ) {
+                Text(if (isTesting) "Testing..." else "Test Connection")
+            }
+
+            // Show test result
+            testResultMessage?.let { message ->
+                Text(
+                    text = message,
+                    color = when {
+                        message.startsWith("✓") -> Color.Green
+                        message.startsWith("✗") -> Color.Red
+                        else -> MaterialTheme.colors.onSurface
+                    },
+                    modifier = Modifier.padding(bottom = 8.dp),
+                    style = MaterialTheme.typography.body2
+                )
+            }
+        }
     }
 }
 
@@ -265,6 +412,41 @@ fun SettingToggleRow(
             checked = value,
             onCheckedChange = onToggle,
             modifier = Modifier.padding(start = 8.dp, top = 10.dp, bottom = 12.dp),
+        )
+    }
+    SettingsDivider()
+}
+
+@Composable
+fun SettingTextInputRow(
+    label: String,
+    placeholder: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    isPassword: Boolean = false
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp, horizontal = 4.dp)
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.body1,
+            color = MaterialTheme.colors.onSurface,
+            modifier = Modifier.padding(bottom = 4.dp)
+        )
+        androidx.compose.material.TextField(
+            value = value,
+            onValueChange = onValueChange,
+            placeholder = { Text(placeholder) },
+            modifier = Modifier.fillMaxWidth(),
+            visualTransformation = if (isPassword) androidx.compose.ui.text.input.PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
+            singleLine = true,
+            colors = androidx.compose.material.TextFieldDefaults.textFieldColors(
+                backgroundColor = MaterialTheme.colors.surface,
+                textColor = MaterialTheme.colors.onSurface
+            )
         )
     }
     SettingsDivider()

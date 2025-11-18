@@ -29,6 +29,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Badge
 import androidx.compose.material.BadgedBox
 import androidx.compose.material.Icon
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -72,6 +73,7 @@ import com.ethran.notable.ui.noRippleClickable
 import com.ethran.notable.utils.isLatestVersion
 import com.onyx.android.sdk.extension.isNullOrEmpty
 import compose.icons.FeatherIcons
+import compose.icons.feathericons.Calendar
 import compose.icons.feathericons.FilePlus
 import compose.icons.feathericons.Folder
 import compose.icons.feathericons.FolderPlus
@@ -115,6 +117,14 @@ fun Library(navController: NavController, folderId: String? = null) {
         Topbar {
             Row(Modifier.fillMaxWidth()) {
                 Spacer(modifier = Modifier.weight(1f))
+                Icon(
+                    imageVector = FeatherIcons.Calendar,
+                    contentDescription = "Calendar",
+                    Modifier
+                        .padding(8.dp)
+                        .noRippleClickable {
+                            navController.navigate("calendar")
+                        })
                 BadgedBox(
                     badge = {
                         if (!isLatestVersion) Badge(
@@ -124,7 +134,7 @@ fun Library(navController: NavController, folderId: String? = null) {
                     }) {
                     Icon(
                         imageVector = FeatherIcons.Settings,
-                        contentDescription = "",
+                        contentDescription = "Settings",
                         Modifier
                             .padding(8.dp)
                             .noRippleClickable {
@@ -182,7 +192,7 @@ fun FolderList(
             // Add new folder row
             Row(
                 Modifier
-                    .border(0.5.dp, Color.Black)
+                    .border(0.5.dp, MaterialTheme.colors.primary)
                     .padding(horizontal = 10.dp, vertical = 5.dp)
                     .noRippleClickable {
                         val folder = Folder(parentFolderId = folderId)
@@ -369,7 +379,7 @@ fun NotebookImportPanel(
                     .weight(1f) // Takes half the height
                     .fillMaxWidth()
                     .background(Color.LightGray.copy(alpha = 0.3f))
-                    .border(2.dp, Color.Black, RectangleShape)
+                    .border(2.dp, MaterialTheme.colors.primary, RectangleShape)
                     .noRippleClickable {
                         onCreateNew()
 
@@ -415,7 +425,7 @@ fun NotebookImportPanel(
                     .weight(1f)
                     .fillMaxWidth()
                     .background(Color.LightGray.copy(alpha = 0.3f))
-                    .border(2.dp, Color.Black, RectangleShape)
+                    .border(2.dp, MaterialTheme.colors.primary, RectangleShape)
                     .noRippleClickable {
                         launcher.launch(
                             arrayOf(

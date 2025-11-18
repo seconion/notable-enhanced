@@ -31,6 +31,7 @@ import com.ethran.notable.editor.utils.refreshScreen
 import com.ethran.notable.ui.components.Anchor
 import com.ethran.notable.ui.components.QuickNav
 import com.ethran.notable.ui.views.BugReportScreen
+import com.ethran.notable.ui.views.CalendarView
 import com.ethran.notable.ui.views.Library
 import com.ethran.notable.ui.views.PagesView
 import com.ethran.notable.ui.views.SettingsView
@@ -158,6 +159,12 @@ fun Router() {
                 route = "settings",
             ) {
                 SettingsView(navController = navController)
+                currentPageId = null
+            }
+            composable(
+                route = "calendar",
+            ) {
+                CalendarView(navController = navController)
                 currentPageId = null
             }
             composable(

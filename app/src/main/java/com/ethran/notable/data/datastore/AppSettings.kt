@@ -50,6 +50,15 @@ data class AppSettings(
     val holdAction: GestureAction? = defaultHoldAction,
     val continuousStrokeSlider: Boolean = false,
 
+    // WebDAV settings
+    val webdavEnabled: Boolean = false,
+    val webdavUrl: String = "",
+    val webdavUsername: String = "",
+    val webdavPassword: String = "",
+
+    // UI Customization
+    val accentColor: AccentColor = AccentColor.Black,
+
     ) {
     companion object {
         val defaultDoubleTapAction get() = GestureAction.Undo
@@ -67,5 +76,9 @@ data class AppSettings(
 
     enum class Position {
         Top, Bottom, // Left,Right,
+    }
+
+    enum class AccentColor {
+        Black, Blue, Red, Green, Orange, Purple, Teal
     }
 }

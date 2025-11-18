@@ -83,6 +83,43 @@ class ExportEngine(
         }
     }
 
+    /**
+     * Exports and returns the actual file path (for file:// URIs) instead of just a message.
+     * Returns null if export failed or if the result is not a file:// URI.
+     */
+    suspend fun exportAndGetFilePath(
+        target: ExportTarget, format: ExportFormat, options: ExportOptions = ExportOptions()
+    ): String? {
+        val (folderUri, baseFileName) = createFileNameAndFolder(target, format, options)
+
+        // Only works for file:// URIs
+        if (folderUri.scheme != "file") {
+            log.w("exportAndGetFilePath only works with file:// URIs, got: ${folderUri.scheme}")
+            return null
+        }
+
+        val extension = when (format) {
+            ExportFormat.PDF -> "pdf"
+            ExportFormat.PNG -> "png"
+            ExportFormat.JPEG -> "jpg"
+            ExportFormat.XOPP -> "xopp"
+        }
+
+        val fileName = "$baseFileName.$extension"
+        val file = File(folderUri.path, fileName)
+
+        // Export the file
+        when (format) {
+            ExportFormat.PDF -> exportAsPdf(target, folderUri, baseFileName, options)
+            ExportFormat.PNG, ExportFormat.JPEG -> exportAsImages(
+                target, folderUri, baseFileName, format, options
+            )
+            ExportFormat.XOPP -> exportAsXopp(target, folderUri, baseFileName, options)
+        }
+
+        return if (file.exists()) file.absolutePath else null
+    }
+
 
     /* -------------------- PDF EXPORT -------------------- */
 

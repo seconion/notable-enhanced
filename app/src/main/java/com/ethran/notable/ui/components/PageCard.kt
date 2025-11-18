@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Icon
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -45,12 +46,14 @@ fun PageCard(
     touchModifier: Modifier = Modifier,
     isReorderDragging: Boolean = false,
 ) {
+    val primaryColor = MaterialTheme.colors.primary
+
     Box(modifier = modifier) {
         PagePreview(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(3f / 4f)
-                .border(if (isOpen) 2.dp else 1.dp, Color.Black, RectangleShape)
+                .border(if (isOpen) 2.dp else 1.dp, primaryColor, RectangleShape)
                 .clickable(
                     enabled = isReorderDragging,
                     interactionSource = remember { MutableInteractionSource() },
@@ -65,7 +68,7 @@ fun PageCard(
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .fillMaxWidth()
-                    .background(Color.Black)
+                    .background(primaryColor)
                     .padding(horizontal = 6.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -78,7 +81,7 @@ fun PageCard(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(6.dp)
-                    .background(Color.Black)
+                    .background(primaryColor)
                     .padding(horizontal = 6.dp, vertical = 4.dp),
                 color = Color.White
             )
@@ -115,13 +118,15 @@ fun PageCard(
 private fun IconPill(
     icon: ImageVector, contentDesc: String, onClick: () -> Unit
 ) {
+    val primaryColor = MaterialTheme.colors.primary
+
     Box(
         modifier = Modifier
             .width(35.dp)
             .height(35.dp)
             .clip(RoundedCornerShape(6.dp))
             .background(Color(0xFFFFFFFF))
-            .border(1.dp, Color.Black, RoundedCornerShape(6.dp))
+            .border(1.dp, primaryColor, RoundedCornerShape(6.dp))
             .then(Modifier.sizeIn(minWidth = 40.dp, minHeight = 40.dp))
             .padding(6.dp)
             .clickable(
@@ -130,7 +135,7 @@ private fun IconPill(
         contentAlignment = Alignment.Center
     ) {
         Icon(
-            imageVector = icon, contentDescription = contentDesc, tint = Color.Black
+            imageVector = icon, contentDescription = contentDesc, tint = primaryColor
         )
     }
 }
