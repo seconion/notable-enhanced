@@ -45,7 +45,11 @@ fun reencodeStrokePointsToSB1(appContext: Context) {
 
     var batchSize = 1500
     val progressSnackId = "migration_progress"
-    val maxPressure = EpdController.getMaxTouchPressure().toLong()
+    val maxPressure = try {
+        EpdController.getMaxTouchPressure().toLong()
+    } catch (e: Throwable) {
+        4096L
+    }
 
     while (true) {
         val remaining = countRemaining(db, "stroke_old")

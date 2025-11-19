@@ -36,6 +36,7 @@ import com.ethran.notable.ui.SnackState
 import com.ethran.notable.ui.convertDpToPixel
 import com.ethran.notable.ui.theme.InkaTheme
 import io.shipbook.shipbooksdk.Log
+import kotlinx.coroutines.launch
 
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -110,7 +111,7 @@ fun EditorView(
                 // Auto-upload to WebDAV if enabled
                 val settings = GlobalAppSettings.current
                 if (settings.webdavEnabled && bookId != null) {
-                    kotlinx.coroutines.runBlocking {
+                    kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
                         try {
                             // Export as PDF
                             val book = appRepository.bookRepository.getById(bookId)

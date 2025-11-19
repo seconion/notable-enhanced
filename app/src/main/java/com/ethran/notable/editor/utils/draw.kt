@@ -34,7 +34,11 @@ fun handleDraw(
             right = boundingBox.right,
             points = touchPoints,
             color = color,
-            maxPressure = EpdController.getMaxTouchPressure().toInt()
+            maxPressure = try {
+                EpdController.getMaxTouchPressure().toInt()
+            } catch (e: Throwable) {
+                4096
+            }
         )
         page.addStrokes(listOf(stroke))
         // this is causing lagging and crushing, neo pens are not good

@@ -256,7 +256,7 @@ fun NotebookGrid(
     Text(text = context.getString(R.string.home_notebooks))
     Spacer(Modifier.height(10.dp))
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(100.dp),
+        columns = GridCells.Adaptive(150.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         modifier = Modifier.autoEInkAnimationOnScroll()
@@ -365,7 +365,7 @@ fun NotebookImportPanel(
 
     Box(
         modifier = modifier
-            .width(100.dp)
+            .width(150.dp)
             .aspectRatio(3f / 4f)
             .border(1.dp, Color.Gray, RectangleShape),
     ) {

@@ -98,7 +98,11 @@ import kotlin.math.min
 import kotlin.system.measureTimeMillis
 
 
-val pressure = EpdController.getMaxTouchPressure()
+val pressure = try {
+    EpdController.getMaxTouchPressure()
+} catch (e: Throwable) {
+    4096.0f
+}
 
 // keep reference of the surface view presently associated to the singleton touchhelper
 var referencedSurfaceView: String = ""
@@ -141,7 +145,10 @@ class DrawCanvas(
         )
         var isDrawing = MutableSharedFlow<Boolean>()
         var restartAfterConfChange = MutableSharedFlow<Unit>()
-        var eraserTouchPoint = MutableSharedFlow<Offset?>() //TODO: replace with proper solution
+        var eraserTouchPoint = MutableSharedFlow<Offset?>(
+            extraBufferCapacity = 1,
+            onBufferOverflow = BufferOverflow.DROP_OLDEST
+        ) //TODO: replace with proper solution
 
         // used for managing drawing state on regain focus
         val onFocusChange = MutableSharedFlow<Boolean>()
@@ -167,35 +174,12 @@ class DrawCanvas(
         val saveCurrent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
         val previewPage = MutableSharedFlow<String>(extraBufferCapacity = 1)
         val restoreCanvas = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+        val volumeKeyEvents = MutableSharedFlow<Int>(extraBufferCapacity = 1)
 
 
         private suspend fun waitForDrawing() {
-            Log.d(
-                "DrawCanvas.waitForDrawing", "waiting"
-            )
-            val elapsed = measureTimeMillis {
-                withTimeoutOrNull(3000) {
-                    // Just to make sure wait 1ms before checking lock.
-                    delay(1)
-                    // Wait until drawingInProgress is unlocked before proceeding
-                    while (drawingInProgress.isLocked) {
-                        delay(5)
-                    }
-                } ?: Log.e(
-                    "DrawCanvas.waitForDrawing",
-                    "Timeout while waiting for drawing lock. Potential deadlock."
-                )
-
-            }
-            when {
-                elapsed > 3000 -> Log.e(
-                    "DrawCanvas.waitForDrawing", "Exceeded timeout ($elapsed ms)"
-                )
-
-                elapsed > 100 -> Log.w("DrawCanvas.waitForDrawing", "Took too long: $elapsed ms")
-                else -> Log.d("DrawCanvas.waitForDrawing", "Finished waiting in $elapsed ms")
-            }
-
+            // Wait until drawingInProgress is unlocked before proceeding
+            drawingInProgress.withLock { }
         }
 
         suspend fun waitForDrawingWithSnack() {
@@ -266,7 +250,7 @@ class DrawCanvas(
                 // strokes want be visible, so we need to ensure that it will be done
                 // before anything else happens.
                 Mode.Line -> {
-                    coroutineScope.launch(Dispatchers.Main.immediate) {
+                    coroutineScope.launch(Dispatchers.Default) {
                         drawingInProgress.withLock {
                             val lock = System.currentTimeMillis()
                             log.d("lock obtained in ${lock - startTime} ms")
@@ -305,7 +289,7 @@ class DrawCanvas(
                 }
 
                 Mode.Draw -> {
-                    coroutineScope.launch(Dispatchers.Main.immediate) {
+                    coroutineScope.launch(Dispatchers.Default) {
                         drawingInProgress.withLock {
                             val lock = System.currentTimeMillis()
                             log.d("lock obtained in ${lock - startTime} ms")

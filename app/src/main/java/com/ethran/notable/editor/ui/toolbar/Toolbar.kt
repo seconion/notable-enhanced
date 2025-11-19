@@ -402,7 +402,15 @@ fun Toolbar(
                     )
                 }
 
-                Spacer(Modifier.weight(1f))
+                ToolbarButton(
+                    onSelect = {
+                        scope.launch {
+                            controlTower.undo()
+                        }
+                    },
+                    iconId = R.drawable.undo,
+                    contentDescription = "undo"
+                )
 
                 Box(
                     Modifier
@@ -414,22 +422,14 @@ fun Toolbar(
                 ToolbarButton(
                     onSelect = {
                         scope.launch {
-                            controlTower.undo()
-                        }
-                    },
-                    iconId = R.drawable.undo,
-                    contentDescription = "undo"
-                )
-
-                ToolbarButton(
-                    onSelect = {
-                        scope.launch {
                             controlTower.redo()
                         }
                     },
                     iconId = R.drawable.redo,
                     contentDescription = "redo"
                 )
+
+                Spacer(Modifier.weight(1f))
 
                 Box(
                     Modifier

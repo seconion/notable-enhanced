@@ -54,6 +54,16 @@ class EditorControlTower(
                 refreshScreen()
             }
         }
+        scope.launch {
+            DrawCanvas.volumeKeyEvents.collect { keyCode ->
+                // TODO: Make this configurable (e.g. Undo/Redo vs Next/Prev Page)
+                if (keyCode == android.view.KeyEvent.KEYCODE_VOLUME_UP) {
+                    undo()
+                } else if (keyCode == android.view.KeyEvent.KEYCODE_VOLUME_DOWN) {
+                    redo()
+                }
+            }
+        }
     }
 
     // returns delta if could not scroll, to be added to next request,

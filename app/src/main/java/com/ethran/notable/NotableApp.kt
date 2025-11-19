@@ -8,7 +8,11 @@ class NotableApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        RxManager.Builder.initAppContext(this)
+        try {
+            RxManager.Builder.initAppContext(this)
+        } catch (e: Throwable) {
+            android.util.Log.e("NotableApp", "Failed to initialize Onyx RxManager", e)
+        }
         checkHiddenApiBypass()
     }
 

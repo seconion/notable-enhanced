@@ -55,7 +55,6 @@ class OpenGLRenderer(
     }
 
 
-    private var timeOfLastRefresh2 = 0L
     override fun onDrawFrontBufferedLayer(
         eglManager: EGLManager,
         width: Int,
@@ -86,13 +85,10 @@ class OpenGLRenderer(
         openGlPoints2.add(param)
         if (openGlPoints2.size < 2)
             return
-        if (System.currentTimeMillis() - timeOfLastRefresh2 < 16)
-            return
+
         val pointsToDraw = openGlPoints2.toList()
         openGlPoints2.clear()
         openGlPoints2.add(pointsToDraw.last())
-
-        timeOfLastRefresh2 = System.currentTimeMillis()
 
         timer.step("obtainRenderer")
 
@@ -135,13 +131,11 @@ class OpenGLRenderer(
 
         if (openGlPoints2.size < 2)
             return
-        if (System.currentTimeMillis() - timeOfLastRefresh2 < 16)
-            return
+
         val pointsToDraw = openGlPoints2.toList()
         openGlPoints2.clear()
         openGlPoints2.add(pointsToDraw.last())
 
-        timeOfLastRefresh2 = System.currentTimeMillis()
         timer.step("obtainRenderer")
 
         // Render the entire scene (all lines)

@@ -61,7 +61,11 @@ class XoppFile(
 ) {
     private val log = ShipBook.getLogger("XoppFile")
     private val scaleFactor = A4_WIDTH.toFloat() / SCREEN_WIDTH
-    private val maxPressure = EpdController.getMaxTouchPressure()
+    private val maxPressure = try {
+        EpdController.getMaxTouchPressure()
+    } catch (e: Throwable) {
+        4096.0f
+    }
 
     fun writeToXoppStream(target: ExportTarget, output: OutputStream) {
         // Build a temporary plain-XML file using existing writePage(), then gzip it into 'output'

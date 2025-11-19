@@ -143,25 +143,26 @@ fun SettingsView(navController: NavController) {
             }
 
             // Additional actions, only on main settings tab
-            if (selectedTab == 0) {
-                Column(
-                    modifier = Modifier.padding(bottom = 16.dp)
-                ) {
-                    GitHubSponsorButton(
-                        Modifier
-                            .padding(horizontal = 120.dp, vertical = 16.dp)
-                            .height(48.dp)
-                            .fillMaxWidth()
-                    )
-                    ShowUpdateButton(
-                        context = context,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 30.dp, vertical = 8.dp)
-                            .height(48.dp)
-                    )
-                }
-            }
+            // Disabled for now as per request
+//            if (selectedTab == 0) {
+//                Column(
+//                    modifier = Modifier.padding(bottom = 16.dp)
+//                ) {
+//                    GitHubSponsorButton(
+//                        Modifier
+//                            .padding(horizontal = 120.dp, vertical = 16.dp)
+//                            .height(48.dp)
+//                            .fillMaxWidth()
+//                    )
+//                    ShowUpdateButton(
+//                        context = context,
+//                        modifier = Modifier
+//                            .fillMaxWidth()
+//                            .padding(horizontal = 30.dp, vertical = 8.dp)
+//                            .height(48.dp)
+//                    )
+//                }
+//            }
         }
     }
 }
@@ -668,6 +669,11 @@ fun EditGestures(context: Context, kv: KvProxy, settings: AppSettings?) {
                 AppSettings::twoFingerTapAction
             ),
             Triple(
+                "Three Finger Tap Action",
+                AppSettings.defaultThreeFingerTapAction,
+                AppSettings::threeFingerTapAction
+            ),
+            Triple(
                 stringResource(R.string.gestures_swipe_left_action),
                 AppSettings.defaultSwipeLeftAction,
                 AppSettings::swipeLeftAction
@@ -699,6 +705,10 @@ fun EditGestures(context: Context, kv: KvProxy, settings: AppSettings?) {
 
                         context.getString(R.string.gestures_two_finger_tap_action) -> settings?.copy(
                             twoFingerTapAction = action
+                        )
+
+                        "Three Finger Tap Action" -> settings?.copy(
+                            threeFingerTapAction = action
                         )
 
                         context.getString(R.string.gestures_swipe_left_action) -> settings?.copy(

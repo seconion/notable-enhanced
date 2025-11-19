@@ -131,9 +131,7 @@ class LineRenderer {
 //  TODO: Address copilot suggestion:
 //   Creating a new thread for each refresh operation could lead to thread creation overhead and
 //   potential race conditions. Consider using a shared thread pool or coroutine dispatcher instead.
-            thread {
-                refreshScreenRegion(viewModel, dirtyRect)
-            }
+            refreshScreenRegion(viewModel, dirtyRect)
         }
         GLES20.glDisableVertexAttribArray(positionHandle)
         val error = GLES20.glGetError()

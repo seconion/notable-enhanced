@@ -120,6 +120,14 @@ private val einkLogger = ShipBook.getLogger("einkHelper")
  */
 
 
+private inline fun runSafely(block: () -> Unit) {
+    try {
+        block()
+    } catch (e: Throwable) {
+        einkLogger.e("Onyx SDK call failed", e)
+    }
+}
+
 /**
  * Toggles animation-optimized mode for smoother UI interactions.
  *
@@ -128,39 +136,54 @@ private val einkLogger = ShipBook.getLogger("einkHelper")
 fun setAnimationMode(isAnimationMode: Boolean) {
 // reference:
 // https://github.com/onyx-intl/OnyxAndroidDemo/blob/d3a1ffd3af231fe4de60a2a0da692c17cb35ce31/app/OnyxPenDemo/src/main/java/com/onyx/android/eink/pen/demo/ui/PenDemoActivity.java#L500
-    if (isAnimationMode) {
-        EpdController.applyTransientUpdate(UpdateMode.ANIMATION_X)
-        einkLogger.d("Animation mode enabled")
-    } else {
-        EpdController.clearTransientUpdate(true)
-        einkLogger.d("Animation mode disabled")
+    runSafely {
+        if (isAnimationMode) {
+            EpdController.applyTransientUpdate(UpdateMode.ANIMATION_X)
+            einkLogger.d("Animation mode enabled")
+        } else {
+            EpdController.clearTransientUpdate(true)
+            einkLogger.d("Animation mode disabled")
+        }
     }
 }
 
 fun setRecommendedMode() {
-    EpdController.setAppScopeRefreshMode(UpdateOption.NORMAL)
-    einkLogger.d("Changed to NORMAL mode")
+    runSafely {
+        EpdController.setAppScopeRefreshMode(UpdateOption.NORMAL)
+        einkLogger.d("Changed to NORMAL mode")
+    }
 }
 
 fun isRecommendedRefreshMode(): Boolean {
-    val updateOption: UpdateOption = Device.currentDevice().appScopeRefreshMode
-    return updateOption == UpdateOption.NORMAL || updateOption == UpdateOption.REGAL
+    return try {
+        val updateOption: UpdateOption = Device.currentDevice().appScopeRefreshMode
+        updateOption == UpdateOption.NORMAL || updateOption == UpdateOption.REGAL
+    } catch (e: Throwable) {
+        einkLogger.e("isRecommendedRefreshMode failed", e)
+        true // Default to true to avoid nagging
+    }
 }
 
 fun getCurRefreshModeString(): String {
-    return (Device.currentDevice().appScopeRefreshMode).toString()
+    return try {
+        (Device.currentDevice().appScopeRefreshMode).toString()
+    } catch (e: Throwable) {
+        "Unknown"
+    }
 }
 
-suspend fun waitForEpdRefresh(updateOption: UpdateOption = Device.currentDevice().appScopeRefreshMode) {
-    einkLogger.d("Waiting for screen, Update mode: $updateOption")
-//        Device.currentDevice().waitForUpdateFinished()
-    // depending on device, it may take different amount of time to
-    // refresh the screen. So for example, when closing menus, we
-    // need to wait before we freeze screen.
-
+suspend fun waitForEpdRefresh(updateOption: UpdateOption? = null) {
     // Onyx library might change
+    val option = updateOption ?: try {
+         Device.currentDevice().appScopeRefreshMode
+    } catch (e: Throwable) {
+         UpdateOption.NORMAL
+    }
+
+    einkLogger.d("Waiting for screen, Update mode: $option")
+
     @Suppress("REDUNDANT_ELSE_IN_WHEN")
-    when (updateOption) {
+    when (option) {
         UpdateOption.NORMAL -> {
             // HD mode
             delay(190) // On my device ~160 is the minimal delay
@@ -188,7 +211,7 @@ suspend fun waitForEpdRefresh(updateOption: UpdateOption = Device.currentDevice(
 
         else -> {
             // Default fallback
-            Log.e(TAG, "Unknown refresh mode: $updateOption")
+            // Log.e(TAG, "Unknown refresh mode: $updateOption")
             delay(10)
         }
     }
@@ -211,7 +234,7 @@ private fun tryToSetRefreshMode(view: View, mode: UpdateMode): Boolean {
     } catch (e: IllegalArgumentException) {
         einkLogger.d("Device does not support update mode $mode (IllegalArgumentException): ${e.message}")
         false
-    } catch (e: Exception) {
+    } catch (e: Throwable) {
         einkLogger.e("Unexpected error when setting update mode $mode: ${e.message}", e)
         false
     }
@@ -221,18 +244,17 @@ fun onSurfaceInit(view: View) {
     einkLogger.v("onSurfaceInit, (${view.left}, ${view.top} - ${view.right}, ${view.bottom})")
     if(!tryToSetRefreshMode(view, UpdateMode.HAND_WRITING_REPAINT_MODE))
         tryToSetRefreshMode(view, UpdateMode.REGAL)
-    EpdController.enablePost(1)
+    runSafely { EpdController.enablePost(1) }
 }
 
 fun onSurfaceChanged(view: View) {
-    EpdController.enablePost(view, 1)
-
+    runSafely { EpdController.enablePost(view, 1) }
 }
 
 
 fun onSurfaceDestroy(view: View, touchHelper: TouchHelper) {
     einkLogger.v("onSurfaceDestroy, (${view.left}, ${view.top} - ${view.right}, ${view.bottom})")
-    touchHelper.setRawDrawingEnabled(false)
+    runSafely { touchHelper.setRawDrawingEnabled(false) }
 }
 
 
@@ -240,45 +262,50 @@ fun setupSurface(view: View, touchHelper: TouchHelper, toolbarHeight: Int) {
     // Takes at least 50ms on Note 4c,
     // and I don't think that we need it immediately
     einkLogger.i("Setup editable surface")
-    touchHelper.debugLog(false)
-    touchHelper.setRawDrawingEnabled(false)
-    touchHelper.closeRawDrawing()
+    runSafely {
+        touchHelper.debugLog(false)
+        touchHelper.setRawDrawingEnabled(false)
+        touchHelper.closeRawDrawing()
+    
 
-    // Store view dimensions locally before using in Rect
-    val viewWidth = view.width
-    val viewHeight = view.height
+        // Store view dimensions locally before using in Rect
+        val viewWidth = view.width
+        val viewHeight = view.height
 
-    // Determine the exclusion area based on toolbar position
-    val excludeRect: Rect =
-        if (GlobalAppSettings.current.toolbarPosition == AppSettings.Position.Top) {
-            Rect(0, 0, viewWidth, toolbarHeight)
-        } else {
-            Rect(0, viewHeight - toolbarHeight, viewWidth, viewHeight)
-        }
+        // Determine the exclusion area based on toolbar position
+        val excludeRect: Rect =
+            if (GlobalAppSettings.current.toolbarPosition == AppSettings.Position.Top) {
+                Rect(0, 0, viewWidth, toolbarHeight)
+            } else {
+                Rect(0, viewHeight - toolbarHeight, viewWidth, viewHeight)
+            }
 
-    val limitRect =
-        if (GlobalAppSettings.current.toolbarPosition == AppSettings.Position.Top)
-            Rect(0, toolbarHeight, viewWidth, viewHeight)
-        else
-            Rect(0, 0, viewWidth, viewHeight - toolbarHeight)
+        val limitRect =
+            if (GlobalAppSettings.current.toolbarPosition == AppSettings.Position.Top)
+                Rect(0, toolbarHeight, viewWidth, viewHeight)
+            else
+                Rect(0, 0, viewWidth, viewHeight - toolbarHeight)
 
-    touchHelper.setLimitRect(mutableListOf(limitRect)).setExcludeRect(listOf(excludeRect))
-        .openRawDrawing()
+        touchHelper.setLimitRect(mutableListOf(limitRect)).setExcludeRect(listOf(excludeRect))
+            .openRawDrawing()
 
-    touchHelper.setRawDrawingEnabled(true)
+        touchHelper.setRawDrawingEnabled(true)
+    }
     einkLogger.i("Setup editable surface completed")
 
 }
 
 fun prepareForPartialUpdate(view: View, touchHelper: TouchHelper) {
-    EpdController.setDisplayScheme(SCHEME_SCRIBBLE)
-//    EpdController.useFastScheme() // the same as above
-    EpdController.enableA2ForSpecificView(view)
-//    EpdController.enablePost(view, 1)
-    EpdController.setEpdTurbo(100)
-    //exit of drawing mode
-    touchHelper.isRawDrawingRenderEnabled = false
-    touchHelper.isRawDrawingRenderEnabled = true
+    runSafely {
+        EpdController.setDisplayScheme(SCHEME_SCRIBBLE)
+    //    EpdController.useFastScheme() // the same as above
+        EpdController.enableA2ForSpecificView(view)
+    //    EpdController.enablePost(view, 1)
+        EpdController.setEpdTurbo(100)
+        //exit of drawing mode
+        touchHelper.isRawDrawingRenderEnabled = false
+        touchHelper.isRawDrawingRenderEnabled = true
+    }
 }
 
 fun refreshScreenRegion(view: View, dirtyRect: Rect) {
@@ -286,21 +313,23 @@ fun refreshScreenRegion(view: View, dirtyRect: Rect) {
         einkLogger.e("View is not attached to window")
         logCallStack("refreshScreenRegion")
     }
-    EpdController.refreshScreenRegion(
-        view,
-        dirtyRect.left,
-        dirtyRect.top,
-        dirtyRect.width(),
-        dirtyRect.height(),
-        UpdateMode.ANIMATION_MONO
-    )
+    runSafely {
+        EpdController.refreshScreenRegion(
+            view,
+            dirtyRect.left,
+            dirtyRect.top,
+            dirtyRect.width(),
+            dirtyRect.height(),
+            UpdateMode.ANIMATION_MONO
+        )
+    }
 //    EpdController.handwritingRepaint(view, dirtyRect)
 }
 
 //https://github.com/onyx-intl/OnyxAndroidDemo/blob/d3a1ffd3af231fe4de60a2a0da692c17cb35ce31/doc/EPD-Screen-Update.md
 fun refreshScreen() {
     // TODO: It does nothing, I have no idea why.
-    EpdController.repaintEveryThing(UpdateMode.REGAL_PLUS)
+    runSafely { EpdController.repaintEveryThing(UpdateMode.REGAL_PLUS) }
 //    EpdController.refreshScreen(view, UpdateMode.ANIMATION_MONO)
 }
 
@@ -308,7 +337,7 @@ fun refreshScreen() {
 
 fun restoreDefaults(view: View) {
 //    EpdController.resetViewUpdateMode(view)
-    EpdController.setDisplayScheme(SCHEME_NORMAL)
+    runSafely { EpdController.setDisplayScheme(SCHEME_NORMAL) }
 
 }
 

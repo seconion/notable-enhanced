@@ -43,18 +43,29 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 
-var SCREEN_WIDTH = EpdController.getEpdHeight().toInt()
-var SCREEN_HEIGHT = EpdController.getEpdWidth().toInt()
+import android.view.KeyEvent
+
+var SCREEN_WIDTH = 0
+var SCREEN_HEIGHT = 0
 
 var TAG = "MainActivity"
 const val APP_SETTINGS_KEY = "APP_SETTINGS"
 const val PACKAGE_NAME = "com.ethran.notable"
 
-
 @ExperimentalAnimationApi
 @ExperimentalComposeUiApi
 @ExperimentalFoundationApi
 class MainActivity : ComponentActivity() {
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_VOLUME_UP || keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
+             this.lifecycleScope.launch {
+                 DrawCanvas.volumeKeyEvents.emit(keyCode)
+             }
+            return true
+        }
+        return super.onKeyDown(keyCode, event)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableFullScreen()

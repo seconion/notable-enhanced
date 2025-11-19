@@ -24,6 +24,8 @@ private const val SWIPE_THRESHOLD_SMOOTH = 100f
 private const val TWO_FINGER_TOUCH_TAP_MAX_TIME = 200L
 private const val TWO_FINGER_TOUCH_TAP_MIN_TIME = 20L
 private const val TWO_FINGER_TAP_MOVEMENT_TOLERANCE = 20f
+private const val THREE_FINGER_TOUCH_TAP_MAX_TIME = 200L
+private const val THREE_FINGER_TAP_MOVEMENT_TOLERANCE = 30f
 private const val PINCH_ZOOM_THRESHOLD_CONTINUOUS = 0.25f
 
 const val PINCH_ZOOM_THRESHOLD = 0.5f
@@ -332,6 +334,10 @@ data class GestureState(
         return getInputCount() == 2
     }
 
+    fun isThreeFingers(): Boolean {
+        return getInputCount() == 3
+    }
+
     fun isOneFingerTap(): Boolean {
         val totalDelta = calculateTotalDelta()
         val gestureDuration = getElapsedTime()
@@ -345,6 +351,16 @@ data class GestureState(
         val gestureDuration = getElapsedTime()
         return totalDelta < TWO_FINGER_TAP_MOVEMENT_TOLERANCE &&
                 gestureDuration < TWO_FINGER_TOUCH_TAP_MAX_TIME &&
+                gestureDuration > TWO_FINGER_TOUCH_TAP_MIN_TIME
+    }
+
+    fun isThreeFingersTap(): Boolean {
+        if (!isThreeFingers()) return false
+        if (gestureMode != GestureMode.Normal) return false
+        val totalDelta = calculateTotalDelta()
+        val gestureDuration = getElapsedTime()
+        return totalDelta < THREE_FINGER_TAP_MOVEMENT_TOLERANCE &&
+                gestureDuration < THREE_FINGER_TOUCH_TAP_MAX_TIME &&
                 gestureDuration > TWO_FINGER_TOUCH_TAP_MIN_TIME
     }
 }

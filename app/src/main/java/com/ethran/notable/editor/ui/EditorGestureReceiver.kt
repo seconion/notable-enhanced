@@ -81,9 +81,7 @@ fun EditorGestureReceiver(
                                 val stylus =
                                     event.changes.firstOrNull { it.type == PointerType.Stylus }
                                 stylus?.let {
-                                    coroutineScope.launch {
-                                        DrawCanvas.eraserTouchPoint.emit(it.position)
-                                    }
+                                    DrawCanvas.eraserTouchPoint.tryEmit(it.position)
                                     it.consume()
                                 }
                             } while (stylus?.pressed == true)
@@ -272,6 +270,17 @@ fun EditorGestureReceiver(
                             if (!appSettings.continuousZoom && abs(zoomDelta) > PINCH_ZOOM_THRESHOLD) {
                                 controlTower.onPinchToZoom(zoomDelta, Offset(0f, 0f))
                                 log.d("Discrete zoom: $zoomDelta")
+                            }
+                        } else if (gestureState.isThreeFingers()) {
+                            log.v("Three finger tap")
+                            if (gestureState.isThreeFingersTap()) {
+                                resolveGesture(
+                                    settings = appSettings,
+                                    default = AppSettings.defaultThreeFingerTapAction,
+                                    override = AppSettings::threeFingerTapAction,
+                                    scope = coroutineScope,
+                                    controlTower = controlTower
+                                )
                             }
                         }
 

@@ -539,7 +539,7 @@ class PageView(
         currentZoom: Float,
     ): Float {
         // TODO: Better snapping logic
-        val portraitRatio = SCREEN_WIDTH.toFloat() / SCREEN_HEIGHT
+        val portraitRatio = if (SCREEN_HEIGHT != 0) SCREEN_WIDTH.toFloat() / SCREEN_HEIGHT else 1.0f
 
         return if (!GlobalAppSettings.current.continuousZoom) {
             // Discrete zoom mode - snap to either 1.0 or screen ratio
