@@ -31,7 +31,6 @@ This is a vibe-coded fork of [Notable](https://github.com/Ethran/Notable), a han
 <p float="left">
   <img src="Screenshots/screenshot_1.png" width="300" />
   <img src="Screenshots/screenshot_2.png" width="300" /> 
-  <img src="Screenshots/screenshot_3.png" width="300" />
 </p>
 
 ## How to Use
