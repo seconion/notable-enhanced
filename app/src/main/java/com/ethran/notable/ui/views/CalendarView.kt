@@ -227,6 +227,7 @@ private fun MonthNavigationBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .height(70.dp)
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
@@ -405,19 +406,25 @@ private fun TodaysNotesSection(
             .fillMaxWidth()
     ) {
         // Header
-        Text(
-            text = "Today's Notes",
-            style = MaterialTheme.typography.h6,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
+        Column(
+            modifier = Modifier
+                .height(70.dp)
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp), // Align with left side padding
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = "Today's Notes",
+                style = MaterialTheme.typography.h6,
+                fontWeight = FontWeight.Bold
+            )
 
-        Text(
-            text = SimpleDateFormat("EEEE, MMMM d, yyyy", Locale.getDefault()).format(selectedDate),
-            style = MaterialTheme.typography.body2,
-            color = MaterialTheme.colors.onSurface.copy(alpha = 0.7f),
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
+            Text(
+                text = SimpleDateFormat("EEEE, MMMM d, yyyy", Locale.getDefault()).format(selectedDate),
+                style = MaterialTheme.typography.body2,
+                color = MaterialTheme.colors.onSurface.copy(alpha = 0.7f)
+            )
+        }
 
         Divider()
 
@@ -506,7 +513,7 @@ private fun MemoSection(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 8.dp),
+                .height(50.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -873,22 +880,33 @@ private fun RemindersSection(
         loadReminders()
     }
 
-    Card(
-        modifier = modifier,
-        elevation = 2.dp,
-        shape = RoundedCornerShape(8.dp),
-        backgroundColor = MaterialTheme.colors.surface
-    ) {
-        Column(modifier = Modifier.padding(8.dp)) {
+    Column(modifier = modifier) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp),
+            contentAlignment = Alignment.CenterStart
+        ) {
             Text(
                 text = "To-Do",
                 style = MaterialTheme.typography.h6,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 8.dp)
+                fontWeight = FontWeight.Bold
             )
-            Divider()
+        }
 
-            LazyColumn(modifier = Modifier.fillMaxSize().padding(top = 8.dp)) {
+        Divider()
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            elevation = 2.dp,
+            shape = RoundedCornerShape(8.dp),
+            backgroundColor = MaterialTheme.colors.surface
+        ) {
+            LazyColumn(modifier = Modifier.fillMaxSize().padding(8.dp)) {
                 items(reminders) { reminder ->
                     var isChecked by remember { mutableStateOf(false) }
 
