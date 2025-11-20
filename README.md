@@ -21,6 +21,12 @@ This is a vibe-coded fork of [Notable](https://github.com/Ethran/Notable), a han
 - **Activity indicators**: Dots on dates with notebook activity
 - **Today's Notes list**: Shows all notebooks edited on selected date
 
+### AI To-Do Generation (NEW!)
+- **Handwriting to To-Do**: Select any handwritten text and convert it into a digital To-Do list item.
+- **Gemini Powered**: Uses Google's Gemini 2.0 Flash model for fast and accurate recognition.
+- **Calendar Integration**: Generated to-dos appear in the "To-Do" section of the Calendar view.
+- **Interactive List**: Check off items to mark them as done.
+
 ### UI Improvements
 - **Color customization**: 7 accent colors (Black, Blue, Red, Green, Orange, Purple, Teal)
 - **Optimized for Boox Air4C** color e-ink display
@@ -31,6 +37,7 @@ This is a vibe-coded fork of [Notable](https://github.com/Ethran/Notable), a han
 <p float="left">
   <img src="Screenshots/screenshot_1.png" width="300" />
   <img src="Screenshots/screenshot_2.png" width="300" /> 
+  <img src="Screenshots/screenshot_3.png" width="300" />
 </p>
 
 ## How to Use
@@ -42,6 +49,14 @@ This is a vibe-coded fork of [Notable](https://github.com/Ethran/Notable), a han
 4. Click "Test Connection" to verify setup
 5. PDFs will automatically upload when you exit any notebook
 6. Optional: Enable "Delete remote files on local delete" to sync deletions
+
+### AI To-Do Generation
+1. Go to Settings > AI Features and enter your **Gemini API Key**.
+2. Open any note.
+3. Select the **Lasso Tool** from the toolbar.
+4. Draw a circle or box around your handwritten task.
+5. In the floating menu that appears, tap the **Bell Icon**.
+6. The task will be extracted and added to your To-Do list in the Calendar view.
 
 ### Calendar
 1. Tap calendar icon in home screen

@@ -8,6 +8,7 @@ import com.ethran.notable.data.db.KvProxy
 import com.ethran.notable.data.db.KvRepository
 import com.ethran.notable.data.db.PageRepository
 import com.ethran.notable.data.db.StrokeRepository
+import com.ethran.notable.data.db.ReminderRepository
 import com.ethran.notable.data.db.newPage
 import com.ethran.notable.data.model.BackgroundType
 import com.onyx.android.sdk.extension.isNotNull
@@ -20,6 +21,7 @@ class AppRepository(val context: Context) {
     val strokeRepository = StrokeRepository(context)
     val imageRepository = ImageRepository(context)
     val folderRepository = FolderRepository(context)
+    val reminderRepository = ReminderRepository(context)
     val kvRepository = KvRepository(context)
     val kvProxy = KvProxy(context)
 

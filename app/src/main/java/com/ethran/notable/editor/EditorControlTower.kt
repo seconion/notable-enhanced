@@ -277,6 +277,27 @@ class EditorControlTower(
         state.clipboard = state.selectionState.selectionToClipboard(page.scroll, context)
     }
 
+    fun createReminder(context: Context) {
+        val bitmap = state.selectionState.selectedBitmap ?: return
+        showHint("Analyzing selection with Gemini...", scope)
+
+        // Finish ongoing movement
+        applySelectionDisplace()
+
+        scope.launch {
+            val error = com.ethran.notable.utils.GeminiReminders.processReminder(context, bitmap)
+            if (error == null) {
+                showHint("Reminder created!", scope)
+            } else {
+                showHint("Failed: $error", scope)
+            }
+            // Deselect
+            state.selectionState.reset()
+            setIsDrawing(true)
+            DrawCanvas.refreshUi.emit(Unit)
+        }
+    }
+
 
     fun pasteFromClipboard() {
         // finish ongoing movement

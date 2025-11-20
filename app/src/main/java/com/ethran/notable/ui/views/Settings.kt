@@ -263,8 +263,35 @@ fun GeneralSettings(kv: KvProxy, settings: AppSettings) {
                 kv.setAppSettings(settings.copy(visualizePdfPagination = isChecked))
             })
 
+        // AI Settings Section
+        AiSettings(kv, settings)
+
         // WebDAV Settings Section
         WebDavSettings(kv, settings)
+    }
+}
+
+@Composable
+fun AiSettings(kv: KvProxy, settings: AppSettings) {
+    Column(modifier = Modifier.padding(top = 16.dp)) {
+        Text(
+            text = "AI Features",
+            style = MaterialTheme.typography.h6,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(vertical = 8.dp)
+        )
+        
+        SettingsDivider()
+        
+        SettingTextInputRow(
+            label = "Gemini API Key",
+            placeholder = "Enter your API Key",
+            value = settings.geminiApiKey,
+            onValueChange = { newValue ->
+                kv.setAppSettings(settings.copy(geminiApiKey = newValue))
+            },
+            isPassword = true
+        )
     }
 }
 

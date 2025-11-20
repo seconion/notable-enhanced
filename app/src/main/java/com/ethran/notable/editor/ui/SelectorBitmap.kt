@@ -38,6 +38,7 @@ import compose.icons.feathericons.Clipboard
 import compose.icons.feathericons.Copy
 import compose.icons.feathericons.Scissors
 import compose.icons.feathericons.Share2
+import compose.icons.feathericons.Bell
 
 val strokeStyle = Stroke(
     width = 2f,
@@ -105,7 +106,7 @@ fun SelectedBitmap(
 
         // TODO: improve this code
 
-        val buttonCount = if (selectionState.isResizable()) 7 else 5
+        val buttonCount = if (selectionState.isResizable()) 8 else 6
         val toolbarPadding = 4
 
         // If we can calculate offset of buttons show selection handling tools
@@ -124,6 +125,14 @@ fun SelectedBitmap(
                         .padding(toolbarPadding.dp)
                         .height(BUTTON_SIZE.dp)
                 ) {
+                    ToolbarButton(
+                        vectorIcon = FeatherIcons.Bell,
+                        isSelected = false,
+                        onSelect = {
+                            controlTower.createReminder(context)
+                        },
+                        modifier = Modifier.height(BUTTON_SIZE.dp)
+                    )
                     ToolbarButton(
                         vectorIcon = FeatherIcons.Share2,
                         isSelected = false,

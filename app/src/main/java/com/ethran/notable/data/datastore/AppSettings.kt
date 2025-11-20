@@ -61,6 +61,9 @@ data class AppSettings(
     // UI Customization
     val accentColor: AccentColor = AccentColor.Black,
 
+    // Gemini API Key
+    val geminiApiKey: String = "",
+
     ) {
     companion object {
         val defaultDoubleTapAction get() = GestureAction.ChangeTool

@@ -35,6 +35,7 @@ import com.ethran.notable.data.AppRepository
 import com.ethran.notable.data.db.Notebook
 import com.ethran.notable.data.db.Page
 import com.ethran.notable.data.db.Stroke
+import com.ethran.notable.data.db.Reminder
 import com.ethran.notable.editor.drawing.drawStroke
 import com.ethran.notable.TAG
 import io.shipbook.shipbooksdk.Log
@@ -152,19 +153,34 @@ fun CalendarView(navController: NavController) {
             Divider(modifier = Modifier.padding(horizontal = 8.dp))
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Bottom row: Memo (full width, takes 65% of screen)
+            // Bottom row: Memo and To-Do
             if (selectedDate != null) {
-                MemoSection(
-                    selectedDate = selectedDate!!,
-                    navController = navController,
-                    dailyMemoPageId = dailyMemoPageId,
-                    dailyMemoBookId = dailyMemoBookId,
-                    appRepository = appRepository,
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(0.65f)
                         .padding(horizontal = 8.dp)
-                )
+                ) {
+                    MemoSection(
+                        selectedDate = selectedDate!!,
+                        navController = navController,
+                        dailyMemoPageId = dailyMemoPageId,
+                        dailyMemoBookId = dailyMemoBookId,
+                        appRepository = appRepository,
+                        modifier = Modifier
+                            .weight(0.5f)
+                            .fillMaxHeight()
+                    )
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    RemindersSection(
+                        appRepository = appRepository,
+                        modifier = Modifier
+                            .weight(0.5f)
+                            .fillMaxHeight()
+                    )
+                }
             }
         }
     }
@@ -832,5 +848,81 @@ private suspend fun createDailyMemo(
     } catch (e: Exception) {
         Log.e(TAG, "Error creating daily memo: ${e.message}", e)
         null
+    }
+}
+
+@Composable
+private fun RemindersSection(
+    appRepository: AppRepository,
+    modifier: Modifier = Modifier
+) {
+    var reminders by remember { mutableStateOf<List<Reminder>>(emptyList()) }
+    val scope = rememberCoroutineScope()
+
+    // Load active reminders
+    fun loadReminders() {
+        scope.launch(Dispatchers.IO) {
+            val active = appRepository.reminderRepository.getAllActive()
+            withContext(Dispatchers.Main) {
+                reminders = active
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        loadReminders()
+    }
+
+    Card(
+        modifier = modifier,
+        elevation = 2.dp,
+        shape = RoundedCornerShape(8.dp),
+        backgroundColor = MaterialTheme.colors.surface
+    ) {
+        Column(modifier = Modifier.padding(8.dp)) {
+            Text(
+                text = "To-Do",
+                style = MaterialTheme.typography.h6,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            Divider()
+
+            LazyColumn(modifier = Modifier.fillMaxSize().padding(top = 8.dp)) {
+                items(reminders) { reminder ->
+                    var isChecked by remember { mutableStateOf(false) }
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                isChecked = !isChecked
+                                scope.launch(Dispatchers.IO) {
+                                    val updated = reminder.copy(isDone = isChecked)
+                                    appRepository.reminderRepository.update(updated)
+                                }
+                            }
+                            .padding(vertical = 4.dp)
+                    ) {
+                        Checkbox(
+                            checked = isChecked,
+                            onCheckedChange = { checked ->
+                                isChecked = checked
+                                scope.launch(Dispatchers.IO) {
+                                    val updated = reminder.copy(isDone = checked)
+                                    appRepository.reminderRepository.update(updated)
+                                }
+                            }
+                        )
+                        Text(
+                            text = reminder.text,
+                            style = if (isChecked) MaterialTheme.typography.body1.copy(textDecoration = androidx.compose.ui.text.style.TextDecoration.LineThrough) else MaterialTheme.typography.body1,
+                            modifier = Modifier.padding(start = 8.dp)
+                        )
+                    }
+                }
+            }
+        }
     }
 }
