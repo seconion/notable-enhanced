@@ -2,6 +2,14 @@
 
 This is a vibe-coded fork of [Notable](https://github.com/Ethran/Notable), a handwriting note-taking app for Android e-ink devices.
 
+## 📥 Download & Install
+**[Download Latest APK (v0.3.1)](https://github.com/seconion/notable-enhanced/releases/download/v0.3.1/notable-enhanced-v0.3.1.apk)**
+
+**How to Install:**
+1.  Click the link above to download the `.apk` file to your device.
+2.  Open the file and tap **"Install"** (You may need to allow installation from unknown sources).
+3.  Enjoy!
+
 ## Features
 
 ### 📅 Calendar & Daily Memos
