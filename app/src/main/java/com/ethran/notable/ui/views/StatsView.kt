@@ -145,8 +145,8 @@ fun StatsView(navController: NavController) {
 @Composable
 fun MountainClimb(score: Int) {
     val level = score % 100 // 0 to 100 progress per "mountain"
-    val mountainColor = Color(0xFF5D4037)
-    val skyColor = Color(0xFFE3F2FD)
+    val mountainColor = Color.Black
+    val skyColor = Color.White
     
     Canvas(modifier = Modifier.fillMaxSize()) {
         val w = size.width
@@ -176,22 +176,30 @@ fun MountainClimb(score: Int) {
             close()
         }
         drawPath(path = snowPath, color = Color.White)
+        // Optional: Add stroke to snow cap for better definition if white-on-white (but it's white-on-black here)
+        drawPath(path = snowPath, color = Color.Black, style = Stroke(width = 2.dp.toPx()))
 
         // Draw "Pixel Person" (Rock Pusher)
-        // Calculate position based on 'level' (0-100)
-        // We climb the left side: x goes from 0 to w/2, y goes from h to h*0.2
         val progress = (level / 100f).coerceIn(0f, 1f)
         val personX = w * 0.5f * progress
         val personY = h - (h * 0.8f * progress)
         
-        // Draw Person (Simple Circle/Stick)
-        drawCircle(color = Color.Black, radius = 8.dp.toPx(), center = Offset(personX, personY - 15.dp.toPx()))
+        // Draw Person (White outline for visibility against black mountain)
+        drawCircle(color = Color.White, radius = 9.dp.toPx(), center = Offset(personX, personY - 15.dp.toPx()))
+        drawCircle(color = Color.Black, radius = 7.dp.toPx(), center = Offset(personX, personY - 15.dp.toPx())) // Inner black
+        
         // Body
+        drawLine(
+            color = Color.White, 
+            start = Offset(personX, personY - 15.dp.toPx()), 
+            end = Offset(personX, personY), 
+            strokeWidth = 6.dp.toPx()
+        )
         drawLine(
             color = Color.Black, 
             start = Offset(personX, personY - 15.dp.toPx()), 
             end = Offset(personX, personY), 
-            strokeWidth = 4.dp.toPx()
+            strokeWidth = 3.dp.toPx()
         )
         
         // Draw the Rock
@@ -201,10 +209,12 @@ fun MountainClimb(score: Int) {
             radius = rockSize, 
             center = Offset(personX + 16.dp.toPx(), personY - 5.dp.toPx())
         )
-        
-        // Draw Stats Text
-        // Using nativeCanvas for text drawing is complex in Compose Canvas without TextMeasurer (available in newer compose)
-        // So we overlay Text in the Box instead.
+        drawCircle(
+            color = Color.Black, 
+            radius = rockSize, 
+            center = Offset(personX + 16.dp.toPx(), personY - 5.dp.toPx()),
+            style = Stroke(width = 2.dp.toPx())
+        )
     }
     
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopStart) {
@@ -213,12 +223,12 @@ fun MountainClimb(score: Int) {
                 text = "Score: $score",
                 style = MaterialTheme.typography.h4,
                 fontWeight = FontWeight.Black,
-                color = Color(0xFF3E2723)
+                color = Color.Black
             )
             Text(
                 text = "Elevation: ${level}m / 100m",
                 style = MaterialTheme.typography.subtitle1,
-                color = Color(0xFF5D4037)
+                color = Color.Black
             )
         }
     }
@@ -242,14 +252,14 @@ fun ProductivityChart(tasks: List<Reminder>) {
         }
         
         tasks.forEach { task ->
-            if (task.completedAt != null) { // Use completedAt if available
+            if (task.completedAt != null) {
                 val c = Calendar.getInstance()
                 c.time = task.completedAt
                 val key = SimpleDateFormat("MMM", Locale.getDefault()).format(c.time)
                 if (counts.containsKey(key)) {
                     counts[key] = counts[key]!! + 1
                 }
-            } else if (task.updatedAt != null) { // Fallback to updatedAt
+            } else if (task.updatedAt != null) {
                  val c = Calendar.getInstance()
                 c.time = task.updatedAt
                 val key = SimpleDateFormat("MMM", Locale.getDefault()).format(c.time)
@@ -278,24 +288,28 @@ fun ProductivityChart(tasks: List<Reminder>) {
                 val x = index * (w / monthlyCounts.first.size) + (barWidth / 2)
                 val y = h - barHeight
                 
-                // Draw Bar
+                // Draw Bar - Monochrome
+                val isCurrent = index == monthlyCounts.first.lastIndex
                 drawRect(
-                    color = if (index == monthlyCounts.first.lastIndex) Color(0xFF4CAF50) else Color.Gray,
+                    color = if (isCurrent) Color.Black else Color.Gray,
                     topLeft = Offset(x, y),
                     size = Size(barWidth, barHeight)
                 )
-                
-                // Note: Drawing text directly on canvas requires nativeCanvas access.
-                // For simplicity in this prototype, we omit axis labels on canvas or rely on overlay.
+                // Outline for definition
+                drawRect(
+                    color = Color.Black,
+                    topLeft = Offset(x, y),
+                    size = Size(barWidth, barHeight),
+                    style = Stroke(width = 2f)
+                )
             }
         }
-        // Simple Row for labels below canvas?
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             monthlyCounts.first.forEach { month ->
-                Text(text = month, style = MaterialTheme.typography.caption)
+                Text(text = month, style = MaterialTheme.typography.caption, color = Color.Black)
             }
         }
     }
