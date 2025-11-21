@@ -2,78 +2,51 @@
 
 This is a vibe-coded fork of [Notable](https://github.com/Ethran/Notable), a handwriting note-taking app for Android e-ink devices.
 
-## Added Features
+## New Features
 
-### WebDAV Auto-Sync (NEW!)
-- **Auto-upload PDFs to WebDAV server** when exiting a notebook
-- **Automatic PDF export and sync** - no manual export needed
-- **Test connection** with file upload verification
-- **Auto-delete remote files**: Optional setting to delete PDFs from WebDAV when deleting notebooks locally
-- **Flat folder structure**: All PDFs stored in `Notable/*.pdf`
-- **Auto-overwrite**: Existing PDFs are automatically updated
-- Configuration: WebDAV URL, username, password in Settings
-
-### Calendar View with Daily Memos
-- **Split-pane layout**: Calendar grid + Today's Notes on top, Daily Memo preview on bottom
-- **Auto-select today's date** when opening calendar
-- **Render actual strokes** in memo preview - see what you wrote without opening
-- **Daily Memos**: Automatically create/open date-specific notes for any date
-- **Activity indicators**: Dots on dates with notebook activity
-- **Today's Notes list**: Shows all notebooks edited on selected date
-
-### AI To-Do Generation (NEW!)
-- **Handwriting to To-Do**: Select any handwritten text and convert it into a digital To-Do list item.
-- **Gemini Powered**: Uses Google's Gemini 2.0 Flash model for fast and accurate recognition.
-- **Calendar Integration**: Generated to-dos appear in the "To-Do" section of the Calendar view.
-- **Interactive List**: Check off items to mark them as done.
-
-### Gamified Stats (NEW!)
-- **Mountain Climb**: Watch your progress visualize as a climb up a mountain. Every completed task pushes you higher!
-- **Productivity Chart**: Track your monthly output with a built-in bar chart.
-- **Journey Tracking**: Reset your journey when you reach the top or want to start fresh.
-- **Access**: Tap the chart icon in the To-Do section header.
-
-### UI Improvements
-- **Color customization**: 7 accent colors (Black, Blue, Red, Green, Orange, Purple, Teal)
-- **Optimized for Boox Air4C** color e-ink display
-- **Improved calendar layout**: Optimized spacing and proportions (35% top, 65% memo)
-
-## Screenshots
+### 🤖 AI To-Do Generation
+Transform your handwritten notes into digital tasks instantly.
+- **Lasso & Convert**: Select any handwriting with the Lasso tool and tap the **Bell Icon**.
+- **Gemini Powered**: Uses **Google Gemini 2.0 Flash** for high-accuracy recognition.
+- **Integrated Workflow**: Tasks appear immediately in your daily To-Do list.
 
 <p float="left">
-  <img src="Screenshots/screenshot_1.png" width="300" />
-  <img src="Screenshots/screenshot_2.png" width="300" /> 
-  <img src="Screenshots/screenshot_3.png" width="300" />
+  <img src="Screenshots/ai_loop.png" width="45%" />
+  <img src="Screenshots/todomemo.png" width="45%" /> 
 </p>
 
-## How to Use
+### 🏔️ Gamified Stats
+Stay motivated with visual progress tracking.
+- **Mountain Climb**: Every completed task moves your character up the mountain. Reach the summit every 100 tasks!
+- **Monthly Insights**: Track your productivity with an E-Ink optimized bar chart.
+- **Reset Journey**: Start fresh whenever you want.
 
-### WebDAV Auto-Sync
-1. Go to Settings > WebDAV section
-2. Enable "Enable WebDAV Auto-Upload"
-3. Enter your WebDAV URL, username, and password
-4. Click "Test Connection" to verify setup
-5. PDFs will automatically upload when you exit any notebook
-6. Optional: Enable "Delete remote files on local delete" to sync deletions
+<p align="center">
+  <img src="Screenshots/stats.png" width="80%" />
+</p>
 
-### AI To-Do Generation
-1. Go to Settings > AI Features and enter your **Gemini API Key**.
-2. Open any note.
-3. Select the **Lasso Tool** from the toolbar.
-4. Draw a circle or box around your handwritten task.
-5. In the floating menu that appears, tap the **Bell Icon**.
-6. The task will be extracted and added to your To-Do list in the Calendar view.
+### ☁️ WebDAV Auto-Sync
+Seamlessly backup your notes.
+- **Auto-Upload**: PDFs are uploaded automatically when you exit a notebook.
+- **Background Sync**: No manual export required.
 
-### Calendar
-1. Tap calendar icon in home screen
-2. Select any date to view notebooks edited that day
-3. View/edit daily memo in the bottom preview area
-4. Click "Open" to edit memo in full screen
+---
 
-### Color Themes
-1. Go to Settings > UI Customization
-2. Select your preferred accent color
-3. Calendar, buttons, and highlights will update to match
+## Setup Guide
+
+### 1. Configure AI Features
+Go to **Settings > AI Features** and enter your Gemini API Key.
+
+<p align="center">
+  <img src="Screenshots/ai_key.png" width="80%" />
+</p>
+
+### 2. Configure WebDAV
+Go to **Settings > WebDAV** to set up your cloud storage.
+
+<p align="center">
+  <img src="Screenshots/webdav.png" width="80%" />
+</p>
 
 ## Building
 
