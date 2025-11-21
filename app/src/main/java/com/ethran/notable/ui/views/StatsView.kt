@@ -37,6 +37,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -44,6 +46,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.ethran.notable.data.AppRepository
+import com.ethran.notable.data.datastore.AppSettings
+import com.ethran.notable.data.datastore.GlobalAppSettings
 import com.ethran.notable.data.db.Reminder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -57,6 +61,18 @@ fun StatsView(navController: NavController) {
     val context = LocalContext.current
     val appRepository = remember { AppRepository(context) }
     val scope = rememberCoroutineScope()
+
+    // Determine Accent Color
+    val accentColorEnum = GlobalAppSettings.current.accentColor
+    val buttonColor = when (accentColorEnum) {
+        AppSettings.AccentColor.Black -> Color.Black
+        AppSettings.AccentColor.Blue -> Color.Blue
+        AppSettings.AccentColor.Red -> Color.Red
+        AppSettings.AccentColor.Green -> Color.Green
+        AppSettings.AccentColor.Orange -> Color(0xFFFF9800)
+        AppSettings.AccentColor.Purple -> Color(0xFF9C27B0)
+        AppSettings.AccentColor.Teal -> Color(0xFF009688)
+    }
 
     var completedTasks by remember { mutableStateOf<List<Reminder>>(emptyList()) }
     var totalScore by remember { mutableStateOf(0) }
@@ -111,7 +127,7 @@ fun StatsView(navController: NavController) {
                             loadStats()
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(backgroundColor = Color.Red),
+                    colors = ButtonDefaults.buttonColors(backgroundColor = buttonColor),
                     modifier = Modifier.height(36.dp)
                 ) {
                     Text("Reset Journey", color = Color.White)
@@ -278,38 +294,53 @@ fun ProductivityChart(tasks: List<Reminder>) {
         Canvas(modifier = Modifier.fillMaxSize().padding(bottom = 20.dp)) {
             val w = size.width
             val h = size.height
+            val chartHeight = h - 40f // Reserve space for text
+            
             val barWidth = w / (monthlyCounts.first.size * 1.5f)
             val maxCount = monthlyCounts.second.values.maxOrNull() ?: 1
-            val scale = h / (maxCount + 1).toFloat()
+            val scale = chartHeight / (maxCount + 1).toFloat()
+            
+            val textPaint = android.graphics.Paint().apply {
+                color = android.graphics.Color.BLACK
+                textSize = 30f
+                textAlign = android.graphics.Paint.Align.CENTER
+            }
             
             monthlyCounts.first.forEachIndexed { index, month ->
                 val count = monthlyCounts.second[month] ?: 0
                 val barHeight = count * scale
-                val x = index * (w / monthlyCounts.first.size) + (barWidth / 2)
-                val y = h - barHeight
+                // Calculate center X for this month's slot
+                val slotWidth = w / monthlyCounts.first.size
+                val centerX = index * slotWidth + (slotWidth / 2)
+                val y = chartHeight - barHeight
                 
-                // Draw Bar - Monochrome
                 val isCurrent = index == monthlyCounts.first.lastIndex
+                val topLeft = Offset(centerX - barWidth / 2, y)
+                val barSize = Size(barWidth, barHeight)
+                
+                // Draw Bar
                 drawRect(
                     color = if (isCurrent) Color.Black else Color.Gray,
-                    topLeft = Offset(x, y),
-                    size = Size(barWidth, barHeight)
+                    topLeft = topLeft,
+                    size = barSize
                 )
-                // Outline for definition
+                // Outline
                 drawRect(
                     color = Color.Black,
-                    topLeft = Offset(x, y),
-                    size = Size(barWidth, barHeight),
+                    topLeft = topLeft,
+                    size = barSize,
                     style = Stroke(width = 2f)
                 )
-            }
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            monthlyCounts.first.forEach { month ->
-                Text(text = month, style = MaterialTheme.typography.caption, color = Color.Black)
+                
+                // Draw Text Label
+                drawIntoCanvas { canvas ->
+                    canvas.nativeCanvas.drawText(
+                        month,
+                        centerX,
+                        h, 
+                        textPaint
+                    )
+                }
             }
         }
     }
