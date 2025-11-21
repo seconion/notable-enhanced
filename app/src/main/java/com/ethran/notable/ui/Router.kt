@@ -35,6 +35,7 @@ import com.ethran.notable.ui.views.CalendarView
 import com.ethran.notable.ui.views.Library
 import com.ethran.notable.ui.views.PagesView
 import com.ethran.notable.ui.views.SettingsView
+import com.ethran.notable.ui.views.StatsView
 import com.ethran.notable.ui.views.WelcomeView
 import com.ethran.notable.ui.views.hasFilePermission
 import io.shipbook.shipbooksdk.ShipBook
@@ -165,6 +166,12 @@ fun Router() {
                 route = "calendar",
             ) {
                 CalendarView(navController = navController)
+                currentPageId = null
+            }
+            composable(
+                route = "stats",
+            ) {
+                StatsView(navController = navController)
                 currentPageId = null
             }
             composable(

@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.ShowChart
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.Alignment
@@ -176,6 +177,7 @@ fun CalendarView(navController: NavController) {
 
                     RemindersSection(
                         appRepository = appRepository,
+                        navController = navController,
                         modifier = Modifier
                             .weight(0.5f)
                             .fillMaxHeight()
@@ -861,6 +863,7 @@ private suspend fun createDailyMemo(
 @Composable
 private fun RemindersSection(
     appRepository: AppRepository,
+    navController: NavController,
     modifier: Modifier = Modifier
 ) {
     var reminders by remember { mutableStateOf<List<Reminder>>(emptyList()) }
@@ -892,6 +895,16 @@ private fun RemindersSection(
                 style = MaterialTheme.typography.h6,
                 fontWeight = FontWeight.Bold
             )
+            IconButton(
+                onClick = { navController.navigate("stats") },
+                modifier = Modifier.align(Alignment.CenterEnd)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ShowChart,
+                    contentDescription = "Stats",
+                    tint = MaterialTheme.colors.onSurface.copy(alpha = 0.6f)
+                )
+            }
         }
 
         Divider()
@@ -917,7 +930,10 @@ private fun RemindersSection(
                             .clickable {
                                 isChecked = !isChecked
                                 scope.launch(Dispatchers.IO) {
-                                    val updated = reminder.copy(isDone = isChecked)
+                                    val updated = reminder.copy(
+                                        isDone = isChecked,
+                                        completedAt = if (isChecked) Date() else null
+                                    )
                                     appRepository.reminderRepository.update(updated)
                                 }
                             }
@@ -928,7 +944,10 @@ private fun RemindersSection(
                             onCheckedChange = { checked ->
                                 isChecked = checked
                                 scope.launch(Dispatchers.IO) {
-                                    val updated = reminder.copy(isDone = checked)
+                                    val updated = reminder.copy(
+                                        isDone = checked,
+                                        completedAt = if (checked) Date() else null
+                                    )
                                     appRepository.reminderRepository.update(updated)
                                 }
                             }

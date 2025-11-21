@@ -17,7 +17,8 @@ data class Reminder(
     val text: String,
     val isDone: Boolean = false,
     val createdAt: Date = Date(),
-    val updatedAt: Date = Date()
+    val updatedAt: Date = Date(),
+    val completedAt: Date? = null
 )
 
 @Dao
