@@ -27,6 +27,12 @@ This is a vibe-coded fork of [Notable](https://github.com/Ethran/Notable), a han
 - **Calendar Integration**: Generated to-dos appear in the "To-Do" section of the Calendar view.
 - **Interactive List**: Check off items to mark them as done.
 
+### Gamified Stats (NEW!)
+- **Mountain Climb**: Watch your progress visualize as a climb up a mountain. Every completed task pushes you higher!
+- **Productivity Chart**: Track your monthly output with a built-in bar chart.
+- **Journey Tracking**: Reset your journey when you reach the top or want to start fresh.
+- **Access**: Tap the chart icon in the To-Do section header.
+
 ### UI Improvements
 - **Color customization**: 7 accent colors (Black, Blue, Red, Green, Orange, Purple, Teal)
 - **Optimized for Boox Air4C** color e-ink display
