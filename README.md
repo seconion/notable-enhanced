@@ -28,7 +28,7 @@ Stay motivated with visual progress tracking.
 - **Reset Journey**: Start fresh whenever you want.
 
 <p align="center">
-  <img src="Screenshots/stats.png" width="80%" />
+  <img src="Screenshots/stats.png" width="50%" />
 </p>
 
 ### ☁️ WebDAV Auto-Sync
@@ -48,6 +48,9 @@ Seamlessly backup your notes.
 
 ### Using AI Features
 1.  **Setup**: Go to **Settings > AI Features** and enter your Gemini API Key.
+    <p align="center">
+      <img src="Screenshots/ai_key.png" width="50%" />
+    </p>
 2.  **Create To-Do**: In any note, select text with the **Lasso Tool** and tap the **Bell**.
 3.  **View Stats**: In the Calendar view, tap the **Chart Icon** in the "To-Do" header.
 
@@ -55,7 +58,7 @@ Seamlessly backup your notes.
 Go to **Settings > WebDAV** to set up your cloud storage.
 
 <p align="center">
-  <img src="Screenshots/webdav.png" width="80%" />
+  <img src="Screenshots/webdav.png" width="50%" />
 </p>
 
 ## Building
