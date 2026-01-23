@@ -9,6 +9,7 @@ import com.ethran.notable.editor.utils.imageBoundsInt
 import com.ethran.notable.editor.utils.strokeBounds
 import com.ethran.notable.ui.SnackConf
 import com.ethran.notable.ui.SnackState
+import com.ethran.notable.utils.logCallStack
 import kotlinx.coroutines.CompletableDeferred
 
 
@@ -129,6 +130,10 @@ class History(pageView: PageView) {
     }
 
     fun addOperationsToHistory(operations: OperationBlock) {
+        if (operations.isEmpty()) {
+            logCallStack("History: No operations to add to history")
+            return
+        }
         undoList.add(operations)
         if (undoList.size > 5) undoList.removeAt(0)
         redoList.clear()
