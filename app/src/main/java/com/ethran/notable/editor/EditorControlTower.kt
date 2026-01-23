@@ -279,13 +279,13 @@ class EditorControlTower(
 
     fun createReminder(context: Context) {
         val bitmap = state.selectionState.selectedBitmap ?: return
-        showHint("Analyzing selection with Gemini...", scope)
+        showHint("Analyzing selection...", scope)
 
         // Finish ongoing movement
         applySelectionDisplace()
 
         scope.launch {
-            val error = com.ethran.notable.utils.GeminiReminders.processReminder(context, bitmap)
+            val error = com.ethran.notable.utils.AiReminders.processReminder(context, bitmap)
             if (error == null) {
                 showHint("Reminder created!", scope)
             } else {

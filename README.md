@@ -21,12 +21,18 @@ This is a vibe-coded fork of [Notable](https://github.com/Ethran/Notable), a han
 ### 🤖 AI To-Do Generation
 Transform your handwritten notes into digital tasks instantly.
 - **Lasso & Convert**: Select any handwriting with the Lasso tool and tap the **Bell Icon**.
-- **Gemini Powered**: Uses **Google Gemini 2.0 Flash** for high-accuracy recognition.
+- **Dual Backend Support**: Choose between **Google Gemini** (cloud) or **Ollama** (self-hosted).
 - **Integrated Workflow**: Tasks appear immediately in your daily To-Do list.
+
+**Supported AI Backends:**
+| Backend | Type | Best For |
+|---------|------|----------|
+| Gemini 2.0 Flash | Cloud | Quick setup, no server needed |
+| Ollama (minicpm-v) | Self-hosted | Privacy, no API costs, offline capable |
 
 <p float="left">
   <img src="Screenshots/ai_loop.png" width="45%" />
-  <img src="Screenshots/todomemo.png" width="45%" /> 
+  <img src="Screenshots/todomemo.png" width="45%" />
 </p>
 
 ### 🏔️ Gamified Stats
@@ -55,12 +61,30 @@ Seamlessly backup your notes.
 4.  **Daily Memo**: The bottom-left section lets you **Create** or **Open** a dedicated note for that day.
 
 ### Using AI Features
-1.  **Setup**: Go to **Settings > AI Features** and enter your Gemini API Key.
+1.  **Setup**: Go to **Settings > AI Features** and choose your backend:
+    - **Gemini**: Enter your Google Gemini API Key
+    - **Ollama**: Enter your server URL (e.g., `http://192.168.1.100:11434`) and model name
     <p align="center">
       <img src="Screenshots/ai_key.png" width="50%" />
     </p>
 2.  **Create To-Do**: In any note, select text with the **Lasso Tool** and tap the **Bell**.
 3.  **View Stats**: In the Calendar view, tap the **Chart Icon** in the "To-Do" header.
+
+### Setting up Ollama (Self-hosted AI)
+For privacy-focused or offline use, you can run your own AI server:
+
+```bash
+# Install Ollama on your server/PC
+curl -fsSL https://ollama.com/install.sh | sh
+
+# Pull a vision model (minicpm-v recommended for best OCR)
+ollama pull minicpm-v
+
+# Start Ollama (bind to all interfaces for network access)
+OLLAMA_HOST=0.0.0.0:11434 ollama serve
+```
+
+**Recommended models:** `minicpm-v` (best accuracy), `llama3.2-vision`, `llava`
 
 ### Configuring WebDAV
 Go to **Settings > WebDAV** to set up your cloud storage.

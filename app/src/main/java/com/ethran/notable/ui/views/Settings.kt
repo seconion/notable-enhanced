@@ -273,6 +273,10 @@ fun GeneralSettings(kv: KvProxy, settings: AppSettings) {
 
 @Composable
 fun AiSettings(kv: KvProxy, settings: AppSettings) {
+    val scope = rememberCoroutineScope()
+    var ollamaTestResult by remember { mutableStateOf<String?>(null) }
+    var isTesting by remember { mutableStateOf(false) }
+
     Column(modifier = Modifier.padding(top = 16.dp)) {
         Text(
             text = "AI Features",
@@ -280,18 +284,129 @@ fun AiSettings(kv: KvProxy, settings: AppSettings) {
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(vertical = 8.dp)
         )
-        
-        SettingsDivider()
-        
-        SettingTextInputRow(
-            label = "Gemini API Key",
-            placeholder = "Enter your API Key",
-            value = settings.geminiApiKey,
-            onValueChange = { newValue ->
-                kv.setAppSettings(settings.copy(geminiApiKey = newValue))
-            },
-            isPassword = true
+
+        Text(
+            text = "Convert handwriting to to-do items using AI",
+            style = MaterialTheme.typography.caption,
+            fontStyle = FontStyle.Italic,
+            modifier = Modifier.padding(bottom = 8.dp)
         )
+
+        SettingsDivider()
+
+        // Backend selector
+        SelectorRow(
+            label = "AI Backend",
+            options = listOf(
+                AppSettings.AiBackend.Gemini to "Gemini (Cloud)",
+                AppSettings.AiBackend.Ollama to "Ollama (Self-hosted)"
+            ),
+            value = settings.aiBackend,
+            onValueChange = { newBackend ->
+                kv.setAppSettings(settings.copy(aiBackend = newBackend))
+                ollamaTestResult = null
+            }
+        )
+
+        // Show relevant settings based on selected backend
+        when (settings.aiBackend) {
+            AppSettings.AiBackend.Gemini -> {
+                SettingTextInputRow(
+                    label = "Gemini API Key",
+                    placeholder = "Enter your API Key",
+                    value = settings.geminiApiKey,
+                    onValueChange = { newValue ->
+                        kv.setAppSettings(settings.copy(geminiApiKey = newValue))
+                    },
+                    isPassword = true
+                )
+            }
+
+            AppSettings.AiBackend.Ollama -> {
+                SettingTextInputRow(
+                    label = "Ollama Server URL",
+                    placeholder = "http://your-server:11434",
+                    value = settings.ollamaUrl,
+                    onValueChange = { newValue ->
+                        kv.setAppSettings(settings.copy(ollamaUrl = newValue))
+                        ollamaTestResult = null
+                    }
+                )
+
+                SettingTextInputRow(
+                    label = "Vision Model",
+                    placeholder = "minicpm-v",
+                    value = settings.ollamaModel,
+                    onValueChange = { newValue ->
+                        kv.setAppSettings(settings.copy(ollamaModel = newValue))
+                    }
+                )
+
+                Text(
+                    text = "Recommended: minicpm-v (best OCR), llama3.2-vision, llava",
+                    style = MaterialTheme.typography.caption,
+                    fontStyle = FontStyle.Italic,
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)
+                )
+
+                // Test Connection Button
+                Button(
+                    onClick = {
+                        if (settings.ollamaUrl.isBlank()) {
+                            ollamaTestResult = "Please enter the Ollama server URL first"
+                            return@Button
+                        }
+                        isTesting = true
+                        ollamaTestResult = "Testing connection..."
+                        scope.launch(Dispatchers.IO) {
+                            val result = com.ethran.notable.utils.OllamaClient.testConnection(settings.ollamaUrl)
+                            withContext(Dispatchers.Main) {
+                                ollamaTestResult = result.fold(
+                                    onSuccess = { models ->
+                                        val visionModels = models.filter {
+                                            it.contains("vision") ||
+                                                    it.contains("llava") ||
+                                                    it.contains("minicpm")
+                                        }
+                                        if (visionModels.isNotEmpty()) {
+                                            "Connected! Vision models: ${visionModels.joinToString(", ")}"
+                                        } else if (models.isNotEmpty()) {
+                                            "Connected! Models: ${models.take(5).joinToString(", ")}${if (models.size > 5) "..." else ""}"
+                                        } else {
+                                            "Connected but no models found. Run: ollama pull minicpm-v"
+                                        }
+                                    },
+                                    onFailure = { error ->
+                                        "Failed: ${error.message}"
+                                    }
+                                )
+                                isTesting = false
+                            }
+                        }
+                    },
+                    enabled = !isTesting,
+                    modifier = Modifier
+                        .padding(vertical = 8.dp)
+                        .fillMaxWidth()
+                ) {
+                    Text(if (isTesting) "Testing..." else "Test Connection")
+                }
+
+                // Show test result
+                ollamaTestResult?.let { message ->
+                    Text(
+                        text = message,
+                        color = when {
+                            message.startsWith("Connected") -> Color(0xFF006400)
+                            message.startsWith("Failed") || message.startsWith("Please") -> Color.Red
+                            else -> MaterialTheme.colors.onSurface
+                        },
+                        modifier = Modifier.padding(bottom = 8.dp),
+                        style = MaterialTheme.typography.body2
+                    )
+                }
+            }
+        }
     }
 }
 

@@ -61,10 +61,16 @@ data class AppSettings(
     // UI Customization
     val accentColor: AccentColor = AccentColor.Black,
 
-    // Gemini API Key
+    // AI Settings
+    val aiBackend: AiBackend = AiBackend.Gemini,
     val geminiApiKey: String = "",
+    val ollamaUrl: String = "",
+    val ollamaModel: String = "minicpm-v",
 
     ) {
+    enum class AiBackend {
+        Gemini, Ollama
+    }
     companion object {
         val defaultDoubleTapAction get() = GestureAction.ChangeTool
         val defaultTwoFingerTapAction get() = GestureAction.Undo
