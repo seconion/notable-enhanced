@@ -427,7 +427,7 @@ fun WebDavSettings(kv: KvProxy, settings: AppSettings) {
         )
 
         Text(
-            text = "Automatically upload notes as PDF when exiting the editor",
+            text = "Automatically upload notes as PDF or Markdown when exiting the editor",
             style = MaterialTheme.typography.caption,
             fontStyle = FontStyle.Italic,
             modifier = Modifier.padding(bottom = 8.dp)
@@ -483,6 +483,32 @@ fun WebDavSettings(kv: KvProxy, settings: AppSettings) {
                 onToggle = { isChecked ->
                     kv.setAppSettings(settings.copy(webdavDeleteRemoteOnLocalDelete = isChecked))
                 })
+
+            SelectorRow(
+                label = "Auto-export on exit",
+                options = listOf(
+                    AppSettings.AutoExportFormat.None to "Disabled",
+                    AppSettings.AutoExportFormat.PDF to "PDF only",
+                    AppSettings.AutoExportFormat.Markdown to "Markdown (AI) only",
+                    AppSettings.AutoExportFormat.Both to "Both PDF and Markdown"
+                ),
+                value = settings.autoExportFormat,
+                onValueChange = { newFormat ->
+                    kv.setAppSettings(settings.copy(autoExportFormat = newFormat))
+                }
+            )
+
+            if (settings.autoExportFormat == AppSettings.AutoExportFormat.Markdown ||
+                settings.autoExportFormat == AppSettings.AutoExportFormat.Both
+            ) {
+                Text(
+                    text = "Markdown export uses Ollama and uploads one Markdown file per page.",
+                    style = MaterialTheme.typography.caption,
+                    fontStyle = FontStyle.Italic,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+                )
+            }
 
             // Test Connection Button
             Button(

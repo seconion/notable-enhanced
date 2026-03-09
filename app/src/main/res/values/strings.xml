@@ -81,6 +81,8 @@
 
     <string name="export_page_to">Export page to %1$s</string>
     <string name="exporting_the_page_to">Exporting the page to %1$s…</string>
+    <string name="export_page_to_markdown">Export page to Markdown (AI)</string>
+    <string name="converting_to_markdown">Converting to Markdown…</string>
 
     <string name="export_book_to">Export book to %1$s</string>
     <string name="exporting_the_book_to">Exporting the book to %1$s…</string>

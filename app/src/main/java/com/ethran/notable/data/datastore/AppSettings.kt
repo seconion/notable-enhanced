@@ -57,6 +57,7 @@ data class AppSettings(
     val webdavUsername: String = "",
     val webdavPassword: String = "",
     val webdavDeleteRemoteOnLocalDelete: Boolean = false,
+    val autoExportFormat: AutoExportFormat = AutoExportFormat.PDF,
 
     // UI Customization
     val accentColor: AccentColor = AccentColor.Black,
@@ -68,6 +69,10 @@ data class AppSettings(
     val ollamaModel: String = "minicpm-v",
 
     ) {
+    enum class AutoExportFormat {
+        None, PDF, Markdown, Both
+    }
+
     enum class AiBackend {
         Gemini, Ollama
     }

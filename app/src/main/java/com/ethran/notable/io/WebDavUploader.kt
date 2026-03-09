@@ -231,6 +231,71 @@ object WebDavUploader {
         }
     }
 
+    suspend fun uploadMarkdown(
+        context: Context,
+        markdownContent: String,
+        fileName: String
+    ): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val settings = GlobalAppSettings.current
+
+            if (!settings.webdavEnabled) {
+                Log.d(TAG, "WebDAV upload disabled")
+                return@withContext false
+            }
+
+            if (settings.webdavUrl.isBlank()) {
+                Log.e(TAG, "WebDAV URL not configured")
+                return@withContext false
+            }
+
+            val sardine = OkHttpSardine()
+            if (settings.webdavUsername.isNotBlank() && settings.webdavPassword.isNotBlank()) {
+                sardine.setCredentials(settings.webdavUsername, settings.webdavPassword)
+            }
+
+            val baseUrl = if (settings.webdavUrl.endsWith("/")) {
+                settings.webdavUrl
+            } else {
+                settings.webdavUrl + "/"
+            }
+
+            try {
+                val notableDir = "${baseUrl}Notable/"
+                if (!sardine.exists(notableDir)) {
+                    sardine.createDirectory(notableDir)
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Could not create Notable directory: ${e.message}")
+            }
+
+            try {
+                val markdownDir = "${baseUrl}Notable/Markdown/"
+                if (!sardine.exists(markdownDir)) {
+                    sardine.createDirectory(markdownDir)
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Could not create Markdown directory: ${e.message}")
+            }
+
+            val remotePath = "${baseUrl}Notable/Markdown/${sanitizeFileName(fileName)}"
+            try {
+                if (sardine.exists(remotePath)) {
+                    sardine.delete(remotePath)
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Could not replace existing Markdown file: ${e.message}")
+            }
+
+            sardine.put(remotePath, markdownContent.toByteArray(Charsets.UTF_8), "text/markdown")
+            Log.i(TAG, "Successfully uploaded markdown: $fileName")
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to upload markdown: ${e.message}", e)
+            false
+        }
+    }
+
     /**
      * Sanitizes a filename to be safe for WebDAV paths
      */

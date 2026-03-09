@@ -104,7 +104,12 @@ fun EditorView(
             onDispose {
                 // finish selection operation
                 editorState.selectionState.applySelectionDisplace(page)
-                EditorExitWorkScheduler.schedule(context.applicationContext, bookId, appRepository)
+                EditorExitWorkScheduler.schedule(
+                    context.applicationContext,
+                    bookId,
+                    pageId,
+                    appRepository
+                )
 
                 page.disposeOldPage()
             }

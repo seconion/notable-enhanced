@@ -1,13 +1,13 @@
 # Notable Enhanced
 
-Notable Enhanced is an e-ink focused fork of [Notable](https://github.com/Ethran/Notable), built for handwritten notes, daily planning, and lightweight task management on Android e-paper devices.
+Notable Enhanced is an e-ink focused fork of [Notable](https://github.com/Ethran/Notable), tuned for handwritten notes, planning, and low-friction daily use on Android e-paper devices.
 
-It keeps the original notebook workflow and adds a more opinionated layer around daily use: calendar-driven notes, AI-assisted to-do capture, visual progress tracking, and WebDAV-based backup.
+It keeps the original notebook editor, then adds practical extensions around self-hosted AI, calendar-driven notes, WebDAV sync, reminders, and performance work for slower monochrome hardware.
 
 ## Download
 
-- Latest release: [v0.4.2 - Fork Update Check Fix](https://github.com/seconion/notable-enhanced/releases/tag/v0.4.2)
-- Installable test APK: [notable-enhanced-v0.4.2-debug.apk](https://github.com/seconion/notable-enhanced/releases/download/v0.4.2/app-debug.apk)
+- Latest release: [v0.4.3 - E-Ink Optimization and Markdown Export](https://github.com/seconion/notable-enhanced/releases/tag/v0.4.3)
+- Installable APK: [notable-enhanced-v0.4.3-debug.apk](https://github.com/seconion/notable-enhanced/releases/download/v0.4.3/app-debug.apk)
 
 ### Install
 
@@ -16,6 +16,13 @@ It keeps the original notebook workflow and adds a more opinionated layer around
 3. Launch the app and grant the storage permissions it needs for notebooks, imports, and exports.
 
 ## What This Fork Adds
+
+### E-Ink Focused Optimization
+
+- Reduced duplicate editor observers and repeated background work across note sessions.
+- Moved heavy thumbnail decoding off the UI thread for smoother library browsing.
+- Debounced editor exit exports so leaving a note does not stack unnecessary work.
+- Improved behavior for repeated open/close cycles on slower e-paper devices.
 
 ### Calendar and Daily Memo Workflow
 
@@ -30,6 +37,13 @@ It keeps the original notebook workflow and adds a more opinionated layer around
 - Choose between **Gemini** for a hosted setup or **Ollama** for a self-hosted workflow.
 - Push extracted tasks directly into the in-app reminder flow.
 
+### AI Markdown Export
+
+- Convert handwritten pages into Markdown with a local Ollama vision model.
+- Trigger Markdown export manually from the editor menu.
+- Auto-export Markdown on exit through WebDAV when enabled.
+- Multi-page notebooks export one Markdown file per page instead of overwriting earlier pages.
+
 ### E-Ink Friendly Stats
 
 - Track completed reminders over time.
@@ -39,6 +53,7 @@ It keeps the original notebook workflow and adds a more opinionated layer around
 ### WebDAV Backup
 
 - Export notebooks to PDF on exit and upload them automatically.
+- Upload AI-generated Markdown to `Notable/Markdown/` on your WebDAV server.
 - Keep remote copies aligned with the notebook workflow instead of running manual exports.
 
 ## Screenshots
@@ -66,6 +81,7 @@ Go to **Settings** and choose the backend you want to use.
 
 - Enter your Ollama server URL and model name.
 - Best when you want a self-hosted path with more control over privacy and cost.
+- Required for AI Markdown export.
 
 Example server setup:
 
@@ -80,6 +96,27 @@ Recommended models:
 - `minicpm-v`
 - `llama3.2-vision`
 - `llava`
+
+## Markdown Export
+
+With Ollama and WebDAV configured, you can:
+
+- open a page and use `Export page to Markdown (AI)` from the editor menu
+- enable `Auto-export on exit` in WebDAV settings
+- choose `Markdown (AI) only` or `Both PDF and Markdown`
+
+Markdown files are uploaded to:
+
+```text
+Notable/Markdown/
+```
+
+Notebook pages are exported as separate files when needed, for example:
+
+```text
+Project_Notes_p1.md
+Project_Notes_p2.md
+```
 
 ## Building
 

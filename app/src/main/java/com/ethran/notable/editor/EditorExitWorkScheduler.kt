@@ -3,12 +3,14 @@ package com.ethran.notable.editor
 import android.content.Context
 import com.ethran.notable.TAG
 import com.ethran.notable.data.AppRepository
+import com.ethran.notable.data.datastore.AppSettings
 import com.ethran.notable.data.datastore.GlobalAppSettings
 import com.ethran.notable.io.ExportEngine
 import com.ethran.notable.io.ExportFormat
 import com.ethran.notable.io.ExportTarget
 import com.ethran.notable.io.WebDavUploader
 import com.ethran.notable.io.exportToLinkedFileNow
+import com.ethran.notable.utils.AiMarkdownExporter
 import io.shipbook.shipbooksdk.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -25,7 +27,7 @@ internal object EditorExitWorkScheduler {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val pendingBookJobs = ConcurrentHashMap<String, Job>()
 
-    fun schedule(context: Context, bookId: String?, appRepository: AppRepository) {
+    fun schedule(context: Context, bookId: String?, pageId: String, appRepository: AppRepository) {
         if (bookId == null) return
 
         pendingBookJobs.remove(bookId)?.cancel()
@@ -33,7 +35,7 @@ internal object EditorExitWorkScheduler {
             try {
                 delay(EDITOR_EXIT_DEBOUNCE_MS)
                 exportToLinkedFileNow(context, bookId, appRepository.bookRepository)
-                uploadToWebDavIfNeeded(context, bookId, appRepository)
+                uploadToWebDavIfNeeded(context, bookId, pageId, appRepository)
             } finally {
                 pendingBookJobs.remove(bookId)
             }
@@ -43,6 +45,7 @@ internal object EditorExitWorkScheduler {
     private suspend fun uploadToWebDavIfNeeded(
         context: Context,
         bookId: String,
+        pageId: String,
         appRepository: AppRepository
     ) {
         val settings = GlobalAppSettings.current
@@ -50,33 +53,49 @@ internal object EditorExitWorkScheduler {
 
         try {
             val book = appRepository.bookRepository.getById(bookId) ?: return
-            val pdfPath = ExportEngine(
-                context,
-                appRepository.pageRepository,
-                appRepository.bookRepository
-            ).exportAndGetFilePath(
-                ExportTarget.Book(bookId),
-                ExportFormat.PDF
-            ) ?: run {
-                Log.e(TAG, "Failed to export PDF for WebDAV upload")
-                return
+            if (settings.autoExportFormat == AppSettings.AutoExportFormat.PDF ||
+                settings.autoExportFormat == AppSettings.AutoExportFormat.Both
+            ) {
+                val pdfPath = ExportEngine(
+                    context,
+                    appRepository.pageRepository,
+                    appRepository.bookRepository
+                ).exportAndGetFilePath(
+                    ExportTarget.Book(bookId),
+                    ExportFormat.PDF
+                ) ?: run {
+                    Log.e(TAG, "Failed to export PDF for WebDAV upload")
+                    return
+                }
+
+                val pdfFile = File(pdfPath)
+                if (!pdfFile.exists()) {
+                    Log.e(TAG, "PDF file does not exist: $pdfPath")
+                    return
+                }
+
+                val uploadSuccess = WebDavUploader.uploadPdf(
+                    context,
+                    pdfFile,
+                    book.title
+                )
+                if (uploadSuccess) {
+                    Log.i(TAG, "Successfully uploaded ${book.title} to WebDAV")
+                } else {
+                    Log.e(TAG, "Failed to upload ${book.title} to WebDAV")
+                }
             }
 
-            val pdfFile = File(pdfPath)
-            if (!pdfFile.exists()) {
-                Log.e(TAG, "PDF file does not exist: $pdfPath")
-                return
-            }
-
-            val uploadSuccess = WebDavUploader.uploadPdf(
-                context,
-                pdfFile,
-                book.title
-            )
-            if (uploadSuccess) {
-                Log.i(TAG, "Successfully uploaded ${book.title} to WebDAV")
-            } else {
-                Log.e(TAG, "Failed to upload ${book.title} to WebDAV")
+            if ((settings.autoExportFormat == AppSettings.AutoExportFormat.Markdown ||
+                    settings.autoExportFormat == AppSettings.AutoExportFormat.Both) &&
+                settings.ollamaUrl.isNotBlank()
+            ) {
+                val markdownResult = AiMarkdownExporter.exportPageToMarkdown(
+                    context,
+                    pageId,
+                    book.title
+                )
+                Log.i(TAG, "Markdown auto-export result: $markdownResult")
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error during WebDAV auto-upload: ${e.message}", e)

@@ -26,6 +26,7 @@ import androidx.navigation.NavController
 import com.ethran.notable.R
 import com.ethran.notable.data.AppRepository
 import com.ethran.notable.data.datastore.BUTTON_SIZE
+import com.ethran.notable.data.datastore.GlobalAppSettings
 import com.ethran.notable.editor.DrawCanvas.Companion.clearPageSignal
 import com.ethran.notable.editor.state.EditorState
 import com.ethran.notable.io.ExportEngine
@@ -35,6 +36,7 @@ import com.ethran.notable.ui.LocalSnackContext
 import com.ethran.notable.ui.SnackConf
 import com.ethran.notable.ui.convertDpToPixel
 import com.ethran.notable.ui.noRippleClickable
+import com.ethran.notable.utils.AiMarkdownExporter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -188,6 +190,25 @@ fun ToolbarMenu(
                             ExportEngine(context).export(
                                 target = ExportTarget.Book(bookId = state.bookId),
                                 format = ExportFormat.XOPP
+                            )
+                        }
+                    }
+                    onClose()
+                }
+                DividerCentered()
+            }
+
+            val settings = GlobalAppSettings.current
+            if (settings.webdavEnabled && settings.ollamaUrl.isNotBlank()) {
+                MenuItem(stringResource(R.string.export_page_to_markdown)) {
+                    scope.launch {
+                        snackManager.runWithSnack(
+                            context.getString(R.string.converting_to_markdown)
+                        ) {
+                            AiMarkdownExporter.exportPageToMarkdown(
+                                context,
+                                state.currentPageId,
+                                book?.title
                             )
                         }
                     }
