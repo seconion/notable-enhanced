@@ -95,10 +95,10 @@ Outputs:
 
 ## Notes for Contributors
 
-- Import formats: [docs/import-formats.md](/Users/andrius.liepinaitis/Downloads/notable-enhanced-main/docs/import-formats.md)
-- Export formats: [docs/export-formats.md](/Users/andrius.liepinaitis/Downloads/notable-enhanced-main/docs/export-formats.md)
-- File structure: [docs/file-structure.md](/Users/andrius.liepinaitis/Downloads/notable-enhanced-main/docs/file-structure.md)
-- Database structure: [docs/database-structure.md](/Users/andrius.liepinaitis/Downloads/notable-enhanced-main/docs/database-structure.md)
+- Import formats: [docs/import-formats.md](docs/import-formats.md)
+- Export formats: [docs/export-formats.md](docs/export-formats.md)
+- File structure: [docs/file-structure.md](docs/file-structure.md)
+- Database structure: [docs/database-structure.md](docs/database-structure.md)
 
 ## Credits
 
