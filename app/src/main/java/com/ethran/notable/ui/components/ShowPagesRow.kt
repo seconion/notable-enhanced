@@ -114,7 +114,7 @@ fun ShowPagesRow(
         }
         // Render existing pages
         if (!singlePages.isNullOrEmpty()) {
-            items(singlePages.reversed()) { page ->
+            items(items = singlePages.reversed(), key = { it.id }) { page ->
                 val pageId = page.id
                 var isPageSelected by remember { mutableStateOf(false) }
                 Box {

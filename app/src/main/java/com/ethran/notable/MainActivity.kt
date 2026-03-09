@@ -93,6 +93,7 @@ class MainActivity : ComponentActivity() {
             // Used to load up app settings, latter used in
             // class EditorState
             EditorSettingCacheManager.init(applicationContext)
+            PageDataManager.startBitmapPersistence(applicationContext, lifecycleScope)
             this.lifecycleScope.launch(Dispatchers.IO) {
                 reencodeStrokePointsToSB1(this@MainActivity)
             }

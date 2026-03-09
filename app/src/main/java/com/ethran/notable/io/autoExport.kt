@@ -28,30 +28,38 @@ fun exportToLinkedFile(
     bookId: String?,
     bookRepository: BookRepository,
 ) {
+    CoroutineScope(Dispatchers.IO).launch {
+        exportToLinkedFileNow(context, bookId, bookRepository)
+    }
+}
+
+suspend fun exportToLinkedFileNow(
+    context: Context,
+    bookId: String?,
+    bookRepository: BookRepository,
+) {
     if (bookId == null)
         return
 
     val uriStr = bookRepository.getById(bookId)?.linkedExternalUri
     if (!uriStr.isNullOrBlank()) {
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                Log.i(TAG, "Exporting page to linked file, dictionary: $uriStr")
-                ExportEngine(context).export(
-                    target = ExportTarget.Book(bookId),
-                    format = ExportFormat.XOPP,
-                    options = ExportOptions(
-                        copyToClipboard = false,
-                        targetFolderUri = uriStr.toUri(),
-                        overwrite = true
-                    )
+        try {
+            Log.i(TAG, "Exporting page to linked file, dictionary: $uriStr")
+            ExportEngine(context).export(
+                target = ExportTarget.Book(bookId),
+                format = ExportFormat.XOPP,
+                options = ExportOptions(
+                    copyToClipboard = false,
+                    targetFolderUri = uriStr.toUri(),
+                    overwrite = true
                 )
-                Log.i(TAG, "Export successful")
-            } catch (e: Exception) {
-                logAndShowError(
-                    "exportToLinkedFile",
-                    "Error when exporting page to linked file: ${e.message}"
-                )
-            }
+            )
+            Log.i(TAG, "Export successful")
+        } catch (e: Exception) {
+            logAndShowError(
+                "exportToLinkedFile",
+                "Error when exporting page to linked file: ${e.message}"
+            )
         }
     }
 }

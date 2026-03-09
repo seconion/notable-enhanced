@@ -83,32 +83,32 @@ import io.shipbook.shipbooksdk.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlin.concurrent.thread
+import kotlinx.coroutines.withContext
 
 @ExperimentalFoundationApi
 @ExperimentalComposeUiApi
 @Composable
 fun Library(navController: NavController, folderId: String? = null) {
-    PageDataManager.cancelLoadingPages()
-
     val context = LocalContext.current
-
-    val appRepository = AppRepository(LocalContext.current)
+    val appRepository = remember(context) { AppRepository(context) }
 
     val books by appRepository.bookRepository.getAllInFolder(folderId).observeAsState()
     val singlePages by appRepository.pageRepository.getSinglePagesInFolder(folderId)
         .observeAsState()
     val folders by appRepository.folderRepository.getAllInFolder(folderId).observeAsState()
-    val bookRepository = BookRepository(LocalContext.current)
+    val bookRepository = remember(context) { BookRepository(context) }
 
     var isLatestVersion by remember {
         mutableStateOf(true)
     }
-    LaunchedEffect(key1 = Unit, block = {
-        thread {
-            isLatestVersion = isLatestVersion(context, true)
+    LaunchedEffect(folderId) {
+        PageDataManager.cancelLoadingPages()
+    }
+    LaunchedEffect(context) {
+        isLatestVersion = withContext(Dispatchers.IO) {
+            isLatestVersion(context, true)
         }
-    })
+    }
 
 
     Column(
@@ -208,7 +208,7 @@ fun FolderList(
             }
         }
         if (!folders.isNullOrEmpty()) {
-            items(folders) { folder ->
+            items(items = folders, key = { it.id }) { folder ->
                 var isFolderSettingsOpen by remember { mutableStateOf(false) }
                 if (isFolderSettingsOpen) FolderConfigDialog(
                     folderId = folder.id, onClose = {
@@ -251,7 +251,7 @@ fun NotebookGrid(
     bookRepository: BookRepository,
     folderId: String?
 ) {
-    var importInProgress = false
+    var importInProgress by remember { mutableStateOf(false) }
 
     Text(text = context.getString(R.string.home_notebooks))
     Spacer(Modifier.height(10.dp))
@@ -270,7 +270,7 @@ fun NotebookGrid(
                 onEndImport = { importInProgress = false })
         }
         if (!books.isNullOrEmpty()) {
-            items(books.reversed()) { book ->
+            items(items = books.reversed(), key = { it.id }) { book ->
                 if (book.pageIds.isEmpty()) {
                     if (!importInProgress) {
                         EmptyBookWarningHandler(emptyBook = book, onDelete = {

@@ -29,14 +29,12 @@ import com.ethran.notable.editor.ui.HorizontalScrollIndicator
 import com.ethran.notable.editor.ui.ScrollIndicator
 import com.ethran.notable.editor.ui.SelectedBitmap
 import com.ethran.notable.editor.ui.toolbar.Toolbar
-import com.ethran.notable.io.exportToLinkedFile
 import com.ethran.notable.ui.LocalSnackContext
 import com.ethran.notable.ui.SnackConf
 import com.ethran.notable.ui.SnackState
 import com.ethran.notable.ui.convertDpToPixel
 import com.ethran.notable.ui.theme.InkaTheme
 import io.shipbook.shipbooksdk.Log
-import kotlinx.coroutines.launch
 
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -106,52 +104,7 @@ fun EditorView(
             onDispose {
                 // finish selection operation
                 editorState.selectionState.applySelectionDisplace(page)
-                exportToLinkedFile(context, bookId, appRepository.bookRepository)
-
-                // Auto-upload to WebDAV if enabled
-                val settings = GlobalAppSettings.current
-                if (settings.webdavEnabled && bookId != null) {
-                    kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
-                        try {
-                            // Export as PDF
-                            val book = appRepository.bookRepository.getById(bookId)
-                            if (book != null) {
-                                val pdfPath = com.ethran.notable.io.ExportEngine(
-                                    context,
-                                    appRepository.pageRepository,
-                                    appRepository.bookRepository
-                                ).exportAndGetFilePath(
-                                    com.ethran.notable.io.ExportTarget.Book(bookId),
-                                    com.ethran.notable.io.ExportFormat.PDF
-                                )
-
-                                // Upload to WebDAV
-                                if (pdfPath != null) {
-                                    val pdfFile = java.io.File(pdfPath)
-                                    if (pdfFile.exists()) {
-                                        Log.d(TAG, "Uploading PDF to WebDAV: ${pdfFile.absolutePath}")
-                                        val uploadSuccess = com.ethran.notable.io.WebDavUploader.uploadPdf(
-                                            context,
-                                            pdfFile,
-                                            book.title
-                                        )
-                                        if (uploadSuccess) {
-                                            Log.i(TAG, "Successfully uploaded ${book.title} to WebDAV")
-                                        } else {
-                                            Log.e(TAG, "Failed to upload ${book.title} to WebDAV")
-                                        }
-                                    } else {
-                                        Log.e(TAG, "PDF file does not exist: $pdfPath")
-                                    }
-                                } else {
-                                    Log.e(TAG, "Failed to export PDF for WebDAV upload")
-                                }
-                            }
-                        } catch (e: Exception) {
-                            Log.e(TAG, "Error during WebDAV auto-upload: ${e.message}", e)
-                        }
-                    }
-                }
+                EditorExitWorkScheduler.schedule(context.applicationContext, bookId, appRepository)
 
                 page.disposeOldPage()
             }

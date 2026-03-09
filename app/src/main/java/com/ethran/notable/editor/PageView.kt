@@ -19,7 +19,6 @@ import com.ethran.notable.data.AppRepository
 import com.ethran.notable.data.CachedBackground
 import com.ethran.notable.data.PageDataManager
 import com.ethran.notable.data.PageDataManager.cacheNeighbors
-import com.ethran.notable.data.PageDataManager.collectAndPersistBitmapsBatch
 import com.ethran.notable.data.PageDataManager.updateOnExit
 import com.ethran.notable.data.datastore.GlobalAppSettings
 import com.ethran.notable.data.db.AppDatabase
@@ -181,7 +180,6 @@ class PageView(
             DrawCanvas.refreshUiImmediately.emit(Unit)
             loadPage()
             log.d("Page loaded (Init with id: $currentPageId)")
-            collectAndPersistBitmapsBatch(context, coroutineScope)
         }
     }
 

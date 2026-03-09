@@ -102,6 +102,8 @@ object PageDataManager {
     private val jobLock = Mutex()
     private val dataLoadingJobs = mutableMapOf<String, Job>()
     val dataLoadingScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    @Volatile
+    private var bitmapPersistenceStarted = false
 
     init {
         startFileInvalidationCollector()
@@ -353,9 +355,14 @@ object PageDataManager {
     }
 
     val saveTopic = MutableSharedFlow<String>()
-    fun collectAndPersistBitmapsBatch(
+    fun startBitmapPersistence(
         context: Context, scope: CoroutineScope
     ) {
+        if (bitmapPersistenceStarted) return
+        synchronized(this) {
+            if (bitmapPersistenceStarted) return
+            bitmapPersistenceStarted = true
+        }
         scope.launch(Dispatchers.IO) {
             saveTopic.buffer(10).chunked(1000).collect { pageIdBatch ->
                 // 3. Take only the unique page IDs from the batch.
@@ -391,6 +398,12 @@ object PageDataManager {
                 }
             }
         }
+    }
+
+    fun collectAndPersistBitmapsBatch(
+        context: Context, scope: CoroutineScope
+    ) {
+        startBitmapPersistence(context, scope)
     }
 
 

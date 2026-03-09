@@ -81,6 +81,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -120,7 +121,10 @@ class DrawCanvas(
     private val logCanvasObserver = ShipBook.getLogger("CanvasObservers")
     private val log = ShipBook.getLogger("DrawCanvas")
     var lastStrokeEndTime: Long = 0
-    //private val commitHistorySignal = MutableSharedFlow<Unit>()
+    private var initialized = false
+    private var observersRegistered = false
+    private var surfaceCallback: SurfaceHolder.Callback? = null
+    private val observerJobs = mutableListOf<Job>()
 
     private var glRenderer = OpenGLRenderer(this)
     override fun onAttachedToWindow() {
@@ -132,6 +136,8 @@ class DrawCanvas(
 
     override fun onDetachedFromWindow() {
         log.d("Detached from window")
+        surfaceCallback?.let { holder.removeCallback(it) }
+        initialized = false
         glRenderer.release()
         super.onDetachedFromWindow()
     }
@@ -226,7 +232,7 @@ class DrawCanvas(
             when (getActualState().mode) {
                 Mode.Erase -> onRawErasingTouchPointListReceived(plist)
                 Mode.Select -> {
-                    thread {
+                    coroutineScope.launch(Dispatchers.Default) {
                         val points =
                             copyInputToSimplePointF(plist.points, page.scroll, page.zoomLevel.value)
                         handleSelect(
@@ -253,10 +259,6 @@ class DrawCanvas(
                 Mode.Line -> {
                     coroutineScope.launch(Dispatchers.Default) {
                         drawingInProgress.withLock {
-                            val lock = System.currentTimeMillis()
-                            log.d("lock obtained in ${lock - startTime} ms")
-
-
                             val (startPoint, endPoint) = getModifiedStrokeEndpoints(
                                 plist.points,
                                 page.scroll,
@@ -292,9 +294,6 @@ class DrawCanvas(
                 Mode.Draw -> {
                     coroutineScope.launch(Dispatchers.Default) {
                         drawingInProgress.withLock {
-                            val lock = System.currentTimeMillis()
-                            log.d("lock obtained in ${lock - startTime} ms")
-
                             // Thread.sleep(1000)
                             // transform points to page space
                             val scaledPoints =
@@ -402,31 +401,21 @@ class DrawCanvas(
         TouchHelper.create(this, inputCallback)
     }
 
-    fun init() {
-        log.i("Initializing Canvas")
-        glRenderer.attachSurfaceView(this)
-
-        // This does not work, as EditorGestureReceiver is stealing all the events.
-        setOnTouchListener(glRenderer.onTouchListener)
-
-        val surfaceCallback: SurfaceHolder.Callback = object : SurfaceHolder.Callback {
+    private fun getOrCreateSurfaceCallback(): SurfaceHolder.Callback {
+        surfaceCallback?.let { return it }
+        return object : SurfaceHolder.Callback {
             override fun surfaceCreated(holder: SurfaceHolder) {
                 log.i("surface created $holder")
-                // set up the drawing surface
                 updateActiveSurface()
-                // Restore the correct stroke size and style.
                 updatePenAndStroke()
             }
 
             override fun surfaceChanged(
                 holder: SurfaceHolder, format: Int, width: Int, height: Int
             ) {
-                // Only act if actual dimensions changed
                 if (page.viewWidth == width && page.viewHeight == height) return
 
                 logCanvasObserver.v("Surface dimension changed!")
-
-                // Update page dimensions, redraw and refresh
                 page.updateDimensions(width, height)
                 updateActiveSurface()
                 onSurfaceChanged(this@DrawCanvas)
@@ -438,22 +427,34 @@ class DrawCanvas(
                         this@DrawCanvas.hashCode()
                     } - ref $referencedSurfaceView"
                 )
-                holder.removeCallback(this)
                 if (referencedSurfaceView == this@DrawCanvas.hashCode().toString()) {
                     touchHelper.closeRawDrawing()
                 }
                 onSurfaceDestroy(this@DrawCanvas, touchHelper)
             }
+        }.also { surfaceCallback = it }
+    }
+
+    fun init() {
+        glRenderer.attachSurfaceView(this)
+        if (!initialized) {
+            log.i("Initializing Canvas")
+            setOnTouchListener(glRenderer.onTouchListener)
+            holder.addCallback(getOrCreateSurfaceCallback())
+            initialized = true
         }
-
-        this.holder.addCallback(surfaceCallback)
-
+        if (holder.surface?.isValid == true) {
+            updateActiveSurface()
+            updatePenAndStroke()
+        }
     }
 
     @OptIn(FlowPreview::class)
     fun registerObservers() {
+        if (observersRegistered) return
+        observersRegistered = true
 
-        coroutineScope.launch {
+        observerJobs += coroutineScope.launch {
             refreshUiImmediately.collect {
                 logCanvasObserver.v("Refreshing UI!")
                 val zoneToRedraw = Rect(0, 0, page.viewWidth, page.viewHeight)
@@ -464,7 +465,7 @@ class DrawCanvas(
         // observe forceUpdate, takes rect in screen coordinates
         // given null it will redraw whole page
         // BE CAREFUL: partial update is not tested fairly -- might not work in some situations.
-        coroutineScope.launch(Dispatchers.Main.immediate) {
+        observerJobs += coroutineScope.launch(Dispatchers.Main.immediate) {
             forceUpdate.collect { dirtyRectangle ->
                 // On loading, make sure that the loaded strokes are visible to it.
                 logCanvasObserver.v("Force update, zone: $dirtyRectangle, Strokes to draw: ${page.strokes.size}")
@@ -480,14 +481,14 @@ class DrawCanvas(
         }
 
         // observe refreshUi
-        coroutineScope.launch(Dispatchers.Default) {
+        observerJobs += coroutineScope.launch(Dispatchers.Default) {
             refreshUi.collect {
                 logCanvasObserver.v("Refreshing UI!")
                 refreshUiSuspend()
             }
         }
 
-        coroutineScope.launch {
+        observerJobs += coroutineScope.launch {
             onFocusChange.collect { hasFocus ->
                 logCanvasObserver.v("App has focus: $hasFocus")
                 if (hasFocus) {
@@ -499,7 +500,7 @@ class DrawCanvas(
                 }
             }
         }
-        coroutineScope.launch {
+        observerJobs += coroutineScope.launch {
             page.zoomLevel.drop(1).collect {
                 logCanvasObserver.v("zoom level change: ${page.zoomLevel.value}")
                 PageDataManager.setPageZoom(page.currentPageId, page.zoomLevel.value)
@@ -507,7 +508,7 @@ class DrawCanvas(
             }
         }
 
-        coroutineScope.launch {
+        observerJobs += coroutineScope.launch {
             isDrawing.collect {
                 logCanvasObserver.v("drawing state changed to $it!")
                 state.isDrawing = it
@@ -515,7 +516,7 @@ class DrawCanvas(
         }
 
 
-        coroutineScope.launch {
+        observerJobs += coroutineScope.launch {
             addImageByUri.drop(1).collect { imageUri ->
                 if (imageUri != null) {
                     logCanvasObserver.v("Received image: $imageUri")
@@ -524,7 +525,7 @@ class DrawCanvas(
 //                    log.i(  "Image uri is empty")
             }
         }
-        coroutineScope.launch {
+        observerJobs += coroutineScope.launch {
             rectangleToSelectByGesture.drop(1).collect {
                 if (it != null) {
                     logCanvasObserver.v("Area to Select (screen): $it")
@@ -533,7 +534,7 @@ class DrawCanvas(
             }
         }
 
-        coroutineScope.launch {
+        observerJobs += coroutineScope.launch {
             clearPageSignal.collect {
                 require(!state.isDrawing) { "Cannot clear page in drawing mode" }
                 logCanvasObserver.v("Clear page signal!")
@@ -541,14 +542,14 @@ class DrawCanvas(
             }
         }
 
-        coroutineScope.launch {
+        observerJobs += coroutineScope.launch {
             restartAfterConfChange.collect {
-                logCanvasObserver.v("Configuration changed!")
-                init()
+                updateActiveSurface()
+                updatePenAndStroke()
                 drawCanvasToView(null)
             }
         }
-        coroutineScope.launch {
+        observerJobs += coroutineScope.launch {
             eraserTouchPoint.collect { p ->
                 if (!isErasing || !GlobalAppSettings.current.openGLRendering) {
                     return@collect
@@ -567,21 +568,21 @@ class DrawCanvas(
         }
 
         // observe pen and stroke size
-        coroutineScope.launch {
+        observerJobs += coroutineScope.launch {
             snapshotFlow { state.pen }.drop(1).collect {
                 logCanvasObserver.v("pen change: ${state.pen}")
                 updatePenAndStroke()
                 refreshUiSuspend()
             }
         }
-        coroutineScope.launch {
+        observerJobs += coroutineScope.launch {
             snapshotFlow { state.penSettings.toMap() }.drop(1).collect {
                 logCanvasObserver.v("pen settings change: ${state.penSettings}")
                 updatePenAndStroke()
                 refreshUiSuspend()
             }
         }
-        coroutineScope.launch {
+        observerJobs += coroutineScope.launch {
             snapshotFlow { state.eraser }.drop(1).collect {
                 logCanvasObserver.v("eraser change: ${state.eraser}")
                 updatePenAndStroke()
@@ -590,7 +591,7 @@ class DrawCanvas(
         }
 
         // observe is drawing
-        coroutineScope.launch {
+        observerJobs += coroutineScope.launch {
             snapshotFlow { state.isDrawing }.drop(1).collect {
                 logCanvasObserver.v("isDrawing change to $it")
                 // We need to close all menus
@@ -605,7 +606,7 @@ class DrawCanvas(
         }
 
         // observe toolbar open
-        coroutineScope.launch {
+        observerJobs += coroutineScope.launch {
             snapshotFlow { state.isToolbarOpen }.drop(1).collect {
                 logCanvasObserver.v("istoolbaropen change: ${state.isToolbarOpen}")
                 updateActiveSurface()
@@ -615,7 +616,7 @@ class DrawCanvas(
         }
 
         // observe mode
-        coroutineScope.launch {
+        observerJobs += coroutineScope.launch {
             snapshotFlow { getActualState().mode }.drop(1).collect {
                 logCanvasObserver.v("mode change: ${getActualState().mode}")
                 updatePenAndStroke()
@@ -623,14 +624,14 @@ class DrawCanvas(
             }
         }
 
-        coroutineScope.launch {
+        observerJobs += coroutineScope.launch {
             //After 500ms add to history strokes
             commitHistorySignal.debounce(500).collect {
                 logCanvasObserver.v("Commiting to history")
                 commitToHistory()
             }
         }
-        coroutineScope.launch {
+        observerJobs += coroutineScope.launch {
             commitHistorySignalImmediately.collect {
                 commitToHistory()
                 commitCompletion.complete(Unit)
@@ -638,7 +639,7 @@ class DrawCanvas(
         }
 
 
-        coroutineScope.launch {
+        observerJobs += coroutineScope.launch {
             saveCurrent.collect {
                 // Push current bitmap to persist layer so preview has something to load
                 PageDataManager.cacheBitmap(page.currentPageId, page.windowedBitmap)
@@ -646,7 +647,7 @@ class DrawCanvas(
             }
         }
 
-        coroutineScope.launch {
+        observerJobs += coroutineScope.launch {
             previewPage.debounce(50).collectLatest { pageId ->
                 val pageNumber =
                     AppRepository(context).getPageNumber(page.pageFromDb?.notebookId, pageId)
@@ -672,7 +673,7 @@ class DrawCanvas(
             }
         }
 
-        coroutineScope.launch {
+        observerJobs += coroutineScope.launch {
             restoreCanvas.collect {
                 val zoneToRedraw = Rect(0, 0, page.viewWidth, page.viewHeight)
                 restoreCanvas(zoneToRedraw)
@@ -723,8 +724,6 @@ class DrawCanvas(
     }
 
     private fun refreshUi(dirtyRect: Rect?) {
-        log.d("refreshUi: scroll: ${page.scroll}, zoom: ${page.zoomLevel.value}")
-
         // post what page drawn to visible surface
         drawCanvasToView(dirtyRect)
         if (drawingInProgress.isLocked) log.w("Drawing is still in progress there might be a bug.")
