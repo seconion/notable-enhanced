@@ -7,7 +7,7 @@ It keeps the original notebook workflow and adds a more opinionated layer around
 ## Download
 
 - Latest release: [v0.4.1 - E-Ink Optimization](https://github.com/seconion/notable-enhanced/releases/tag/v0.4.1)
-- APK asset: [notable-enhanced-v0.4.1.apk](https://github.com/seconion/notable-enhanced/releases/download/v0.4.1/app-release-unsigned.apk)
+- Installable test APK: [notable-enhanced-v0.4.1-debug.apk](https://github.com/seconion/notable-enhanced/releases/download/v0.4.1/app-debug.apk)
 
 ### Install
 
