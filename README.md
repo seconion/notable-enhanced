@@ -93,13 +93,6 @@ Outputs:
 - Debug APK: `app/build/outputs/apk/debug/app-debug.apk`
 - Release APK: `app/build/outputs/apk/release/app-release-unsigned.apk`
 
-## Notes for Contributors
-
-- Import formats: [docs/import-formats.md](docs/import-formats.md)
-- Export formats: [docs/export-formats.md](docs/export-formats.md)
-- File structure: [docs/file-structure.md](docs/file-structure.md)
-- Database structure: [docs/database-structure.md](docs/database-structure.md)
-
 ## Credits
 
 - Original project: [Ethran/Notable](https://github.com/Ethran/Notable)
