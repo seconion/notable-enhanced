@@ -94,6 +94,8 @@ data class Version(
 }
 
 private val jsonParser = Json { ignoreUnknownKeys = true }
+private const val RELEASE_REPO_OWNER = "seconion"
+private const val RELEASE_REPO_NAME = "notable-enhanced"
 
 fun getLatestReleaseVersion(repoOwner: String, repoName: String): String? {
     val apiUrl = "https://api.github.com/repos/$repoOwner/$repoName/releases"
@@ -156,7 +158,7 @@ fun isLatestVersion(context: Context, force: Boolean = false): Boolean {
         val currentVersion = getCurrentVersionName(context)
 
         if (isNextBuild) {
-            val latestVersion = getLatestPreReleaseTimestamp("ethran", "notable")
+            val latestVersion = getLatestPreReleaseTimestamp(RELEASE_REPO_OWNER, RELEASE_REPO_NAME)
             //        // If either version is null, we can't compare them
             if (latestVersion == null || currentVersion == null) {
                 throw Exception("One of the version is null - comparison is impossible")
@@ -182,7 +184,7 @@ fun isLatestVersion(context: Context, force: Boolean = false): Boolean {
             }
             return isLatestVersion!!
         } else {
-            val latestVersion = getLatestReleaseVersion("ethran", "notable")
+            val latestVersion = getLatestReleaseVersion(RELEASE_REPO_OWNER, RELEASE_REPO_NAME)
             //        // If either version is null, we can't compare them
             if (latestVersion == null || currentVersion == null) {
                 throw Exception("One of the version is null - comparison is impossible")
